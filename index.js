@@ -1,13 +1,13 @@
-// Kastuhino Bot - 7/24 Render Sürümü (index.js)
 const { Client, GatewayIntentBits, SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
 const fs = require('fs');
-const http = require('http'); // Render'ın botu kapatmaması için gerekli
+const http = require('http');
 
-// Render için ufak bir web sunucusu (Bu olmazsa Render botu çökertir)
-http.createServer((req, res) => {
-    res.write("Bot 7/24 Aktif!");
-    res.end();
-}).listen(process.env.PORT || 3000);
+// Render'ın botu kapatmaması (port hatası vermemesi) için kurulan hafif web sunucusu
+const server = http.createServer((req, res) => {
+    res.writeHead(200, { 'Content-Type': 'text/plain' });
+    res.end('Kastuhino Bot Aktif!\n');
+});
+server.listen(process.env.PORT || 3000);
 
 const client = new Client({
     intents: [
@@ -18,7 +18,7 @@ const client = new Client({
     ]
 });
 
-// Partner Veritabanı Dosyası
+// Partner Veritabanı Sistemi
 const PARTNER_FILE = './partners.json';
 let partners = {};
 if (fs.existsSync(PARTNER_FILE)) {
@@ -34,9 +34,9 @@ function savePartners() {
 }
 
 client.once('ready', async () => {
-    console.log(`✅ ${client.user.tag} başarıyla giriş yaptı ve hazır.`);
+    console.log(`✅ ${client.user.tag} başarıyla giriş yaptı!`);
 
-    // Eğik çizgi (/) komutlarını Discord'a yükleme işlemi
+    // Komutların Discord menüsünde (/) görünmesi için kayıt dizisi
     const commands = [
         new SlashCommandBuilder().setName('ban').setDescription('Bir kullanıcıyı sunucudan banlar.')
             .addUserOption(option => option.setName('kullanici').setDescription('Banlanacak kullanıcı').setRequired(true))
@@ -54,12 +54,13 @@ client.once('ready', async () => {
 
     try {
         await client.application.commands.set(commands);
-        console.log('✅ Bütün eğik çizgi (/) komutları Discorda yüklendi!');
+        console.log('✅ Tüm eğik çizgi (/) komutları Discorda başarıyla yüklendi!');
     } catch (error) {
-        console.error('Komutlar yüklenirken hata oluştu:', error);
+        console.error('Komut yüklenirken hata oluştu:', error);
     }
 });
 
+// Komut Yönetimi ve Çalıştırıcısı
 client.on('interactionCreate', async interaction => {
     if (!interaction.isChatInputCommand()) return;
 
@@ -71,7 +72,7 @@ client.on('interactionCreate', async interaction => {
         if (!interaction.member.permissions.has(PermissionFlagsBits.BanMembers)) {
             return interaction.reply({ content: 'Bu komutu kullanmak için yetkin yok!', ephemeral: true });
         }
-        await interaction.guild.members.ban(user, { reason }).catch(console.error);
+        await interaction.guild.members.ban(user, { reason }).catch(() => {});
         await interaction.reply(`${user.tag} başarıyla banlandı! Sebep: ${reason}`);
     } 
     else if (commandName === 'kick') {
@@ -80,7 +81,7 @@ client.on('interactionCreate', async interaction => {
         if (!interaction.member.permissions.has(PermissionFlagsBits.KickMembers)) {
             return interaction.reply({ content: 'Bu komutu kullanmak için yetkin yok!', ephemeral: true });
         }
-        await interaction.guild.members.kick(user, { reason }).catch(console.error);
+        await interaction.guild.members.kick(user, { reason }).catch(() => {});
         await interaction.reply(`${user.tag} başarıyla sunucudan atıldı! Sebep: ${reason}`);
     }
     else if (commandName === 'temizle') {
@@ -88,7 +89,7 @@ client.on('interactionCreate', async interaction => {
         if (!interaction.member.permissions.has(PermissionFlagsBits.ManageMessages)) {
             return interaction.reply({ content: 'Bu komutu kullanmak için yetkin yok!', ephemeral: true });
         }
-        await interaction.channel.bulkDelete(miktar, true).catch(err => {
+        await interaction.channel.bulkDelete(miktar, true).catch(() => {
             return interaction.reply({ content: 'Mesajlar silinirken bir hata oluştu!', ephemeral: true });
         });
         await interaction.reply({ content: `${miktar} adet mesaj silindi!`, ephemeral: true });
@@ -109,5 +110,5 @@ client.on('interactionCreate', async interaction => {
     }
 });
 
-// Botun asıl tokeni
+// Bot Giriş İşlemi
 client.login('MTUzODI4MDk0NDQ2Mzc4MjAxMQ.GS-H5p.yLJibASnqrmyxRdJ1PpteCszB-atCd9JW4U0zg');
