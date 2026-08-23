@@ -111,4 +111,4 @@ client.on('interactionCreate', async interaction => {
 });
 
 // Bot Giriş İşlemi
-client.login('MTUzODI4MDk0NDQ2Mzc4MjAxMQ.GS-H5p.yLJibASnqrmyxRdJ1PpteCszB-atCd9JW4U0zg');
+client.login(process.env.DISCORD_TOKEN);
