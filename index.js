@@ -61,13 +61,37 @@ function createPartnerEmbed(guild, user, data) {
     .setTimestamp();
 }
 
+// GIF Bağlantıları
+const GIFS = {
+  saril: 'https://media.tenor.com/kCZ3To233D8AAAAC/anime-hug.gif',
+  tokat: 'https://media.tenor.com/E3B2MjhiuS8AAAAC/anime-slap.gif',
+  pat: 'https://media.tenor.com/YT-yK49iQ2EAAAAC/anime-head-pat.gif',
+  yumruk: 'https://media.tenor.com/G9yw3Hz9Y3UAAAAC/anime-punch.gif',
+  bak: 'https://media.tenor.com/2s_m3K6WcKMAAAAC/anime-stare.gif',
+  ghoul: 'https://media.tenor.com/2A7fJ6wR6pIAAAAC/kaneki-tokyo-ghoul.gif'
+};
+
+// Anime Öneri Veritabanı
+const ANIME_LISTESI = [
+  { isim: 'Hajime no Ippo', tur: 'Spor / Boks / Aksiyon', desc: 'Ezilen bir çocuğun boks dünyasında zirveye tırmanış hikayesi.' },
+  { isim: 'Tokyo Ghoul', tur: 'Aksiyon / Gizem / Doğaüstü', desc: 'İnsan etiyle beslenen hortlakların dünyasına adım atan Kaneki’nin mücadelesi.' },
+  { isim: 'One Piece', tur: 'Macera / Shounen', desc: 'Korsanlar Kralı olmak isteyen Luffy ve tayfasının devasa macerası.' },
+  { isim: 'Bleach', tur: 'Aksiyon / Doğaüstü', desc: 'Ölüm Meleği (Shinigami) güçleri kazanan Ichigo Kurosaki’nin savaşı.' },
+  { isim: 'Bungou Stray Dogs', tur: 'Gizem / Doğaüstü / Polisiye', desc: 'Özel doğaüstü güçlere sahip dedektiflerin ve mafyanın çatışması.' },
+  { isim: 'Daily Lives of High School Boys', tur: 'Komedi / Okul / Yaşamdan Kesitler', desc: 'Lise erkeklerinin aşırı komik ve saçma günlük hayatı.' }
+];
+
 // Bot Hazır Olduğunda Slash Komutlarını Yükle
 client.once('ready', async () => {
   console.log(`[✓] ${client.user.tag} başarıyla giriş yaptı!`);
 
+  // Aktivite Ayarlama
+  client.user.setActivity('Kastuhino // Anime & Manga', { type: 3 }); // 3 = Watching (İzliyor)
+
   const commands = [
     new SlashCommandBuilder().setName('partner-durum').setDescription('Partnerlik profili kartınızı gösterir.'),
     
+    // YÖNETİM KOMUTLARI
     new SlashCommandBuilder()
       .setName('sil')
       .setDescription('Belirtilen miktarda mesajı temizler.')
@@ -112,28 +136,78 @@ client.once('ready', async () => {
       .setDescription('Kilitli olan kanalı tekrar mesaj yazımına açar.')
       .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
 
-    // SAAT BAZLI ÇEKİLİŞ KOMUTU
+    // ÇEKİLİŞ
     new SlashCommandBuilder()
       .setName('cekilis')
       .setDescription('Odada saat bazlı çekiliş başlatır.')
       .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
       .addStringOption(opt => opt.setName('odul').setDescription('Çekiliş ödülü nedir?').setRequired(true))
       .addIntegerOption(opt => opt.setName('saat').setDescription('Çekiliş kaç saat sürecek?').setRequired(true))
-      .addIntegerOption(opt => opt.setName('kazanan_sayisi').setDescription('Kaç kişi kazanacak?').setRequired(false))
+      .addIntegerOption(opt => opt.setName('kazanan_sayisi').setDescription('Kaç kişi kazanacak?').setRequired(false)),
+
+    // ANIME & EĞLENCE KOMUTLARI
+    new SlashCommandBuilder()
+      .setName('saril')
+      .setDescription('Bir üyeye anime üslubuyla sarılır.')
+      .addUserOption(opt => opt.setName('kullanici').setDescription('Sarılmak istediğin üye').setRequired(true)),
+
+    new SlashCommandBuilder()
+      .setName('tokat')
+      .setDescription('Bir üyeye anime tokadı yapıştırır.')
+      .addUserOption(opt => opt.setName('kullanici').setDescription('Tokatlayacağın üye').setRequired(true)),
+
+    new SlashCommandBuilder()
+      .setName('pat-pat')
+      .setDescription('Bir üyenin kafasını okşar.')
+      .addUserOption(opt => opt.setName('kullanici').setDescription('Kafasını okşayacağın üye').setRequired(true)),
+
+    new SlashCommandBuilder()
+      .setName('yumruk')
+      .setDescription('Bir üyeye boksör yumruğu atar.')
+      .addUserOption(opt => opt.setName('kullanici').setDescription('Yumruklayacağın üye').setRequired(true)),
+
+    new SlashCommandBuilder()
+      .setName('bak')
+      .setDescription('Bir üyeye sert/şüpheci bakış atar.')
+      .addUserOption(opt => opt.setName('kullanici').setDescription('Bakış atacağın üye').setRequired(true)),
+
+    new SlashCommandBuilder()
+      .setName('ship')
+      .setDescription('İki üye arasındaki aşk/uyum yüzdesini ölçer.')
+      .addUserOption(opt => opt.setName('birinci').setDescription('İlk üye').setRequired(true))
+      .addUserOption(opt => opt.setName('ikinci').setDescription('İkinci üye').setRequired(false)),
+
+    new SlashCommandBuilder()
+      .setName('waifu-puanla')
+      .setDescription('Bir üyenin Waifu/Husbando skorunu hesaplar.')
+      .addUserOption(opt => opt.setName('kullanici').setDescription('Puanlanacak üye').setRequired(false)),
+
+    new SlashCommandBuilder()
+      .setName('anime-oner')
+      .setDescription('Rastgele kaliteli bir anime önerisi yapar.'),
+
+    new SlashCommandBuilder()
+      .setName('1000-7')
+      .setDescription('Tokyo Ghoul göndermesi yapar.'),
+
+    new SlashCommandBuilder()
+      .setName('avatar')
+      .setDescription('Sizin veya etiketlenen üyenin avatarını büyük boyutta gösterir.')
+      .addUserOption(opt => opt.setName('kullanici').setDescription('Avatarına bakılacak üye').setRequired(false))
   ];
 
   try {
     await client.application.commands.set(commands);
-    console.log('[✓] Tüm Slash komutları yüklendi!');
+    console.log('[✓] Tüm Slash ve Anime komutları yüklendi!');
   } catch (err) {
     console.error('Slash komut yükleme hatası:', err);
   }
 });
 
-// Komut ve Buton Dinleyici
+// Komut ve Etkileşim Dinleyicisi
 client.on('interactionCreate', async (interaction) => {
 
-  // 1. BUTON ETKİLEŞİMİ (ÇEKİLİŞE KATILMA)
+  // 1. BUTON ETKİLEŞİMİ (ÇEKİLİŞ)
   if (interaction.isButton() && interaction.customId === 'cekilis_katil') {
     const msgId = interaction.message.id;
     if (!cekilisler[msgId]) {
@@ -144,17 +218,14 @@ client.on('interactionCreate', async (interaction) => {
     const katilimcilar = cekilisler[msgId].katilimcilar;
 
     if (katilimcilar.includes(userId)) {
-      // Çıkış yapma
       const index = katilimcilar.indexOf(userId);
       katilimcilar.splice(index, 1);
       await interaction.reply({ content: 'Çekilişten ayrıldınız.', ephemeral: true });
     } else {
-      // Katılma
       katilimcilar.push(userId);
       await interaction.reply({ content: '🎉 Çekilişe başarıyla katıldınız!', ephemeral: true });
     }
 
-    // Embed ve Buton Yazısını Güncelleme
     const data = cekilisler[msgId];
     const tarih = new Date().toLocaleDateString('tr-TR');
 
@@ -178,13 +249,120 @@ client.on('interactionCreate', async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
   const { commandName } = interaction;
 
+  // PARTNER
   if (commandName === 'partner-durum') {
     if (!partners[interaction.user.id]) partners[interaction.user.id] = { bugun: 0, hafta: 0, ay: 0, toplam: 0 };
     const embed = createPartnerEmbed(interaction.guild, interaction.user, partners[interaction.user.id]);
     return interaction.reply({ embeds: [embed] });
   }
 
-  // Admin Kontrolü
+  // ANIME & EĞLENCE KOMUTLARI UYGULAMASI
+  if (commandName === 'saril') {
+    const hedef = interaction.options.getUser('kullanici');
+    const embed = new EmbedBuilder()
+      .setColor('#ff79c6')
+      .setDescription(`🤗 <@${interaction.user.id}>, <@${hedef.id}> kişisine sımsıkı sarıldı!`)
+      .setImage(GIFS.saril);
+    return interaction.reply({ embeds: [embed] });
+  }
+
+  if (commandName === 'tokat') {
+    const hedef = interaction.options.getUser('kullanici');
+    const embed = new EmbedBuilder()
+      .setColor('#ff5555')
+      .setDescription(`🖐️ <@${interaction.user.id}>, <@${hedef.id}> kişisine osmanlı tokadı yapıştırdı!`)
+      .setImage(GIFS.tokat);
+    return interaction.reply({ embeds: [embed] });
+  }
+
+  if (commandName === 'pat-pat') {
+    const hedef = interaction.options.getUser('kullanici');
+    const embed = new EmbedBuilder()
+      .setColor('#ffb86c')
+      .setDescription(`🤏 <@${interaction.user.id}>, <@${hedef.id}> kişisinin kafasını şefkatle okşadı.`)
+      .setImage(GIFS.pat);
+    return interaction.reply({ embeds: [embed] });
+  }
+
+  if (commandName === 'yumruk') {
+    const hedef = interaction.options.getUser('kullanici');
+    const embed = new EmbedBuilder()
+      .setColor('#bd93f9')
+      .setDescription(`👊 <@${interaction.user.id}>, <@${hedef.id}> kişisine fena bir boksör yumruğu indirdi!`)
+      .setImage(GIFS.yumruk);
+    return interaction.reply({ embeds: [embed] });
+  }
+
+  if (commandName === 'bak') {
+    const hedef = interaction.options.getUser('kullanici');
+    const embed = new EmbedBuilder()
+      .setColor('#8be9fd')
+      .setDescription(`👁️ <@${interaction.user.id}>, <@${hedef.id}> kişisine oldukça şüpheci bakıyor...`)
+      .setImage(GIFS.bak);
+    return interaction.reply({ embeds: [embed] });
+  }
+
+  if (commandName === 'ship') {
+    const birinci = interaction.options.getUser('birinci');
+    const ikinci = interaction.options.getUser('ikinci') || interaction.user;
+    
+    // Rastgele Uyum Yüzdesi
+    const uyum = Math.floor(Math.random() * 101);
+    const doluluk = Math.round(uyum / 10);
+    const bar = '💖'.repeat(doluluk) + '🖤'.repeat(10 - doluluk);
+
+    const embed = new EmbedBuilder()
+      .setColor('#ff79c6')
+      .setTitle('💕 Uyum Ölçer (Ship)')
+      .setDescription(`**${birinci.username}** x **${ikinci.username}**\n\n**Uyum:** %${uyum}\n${bar}`);
+    return interaction.reply({ embeds: [embed] });
+  }
+
+  if (commandName === 'waifu-puanla') {
+    const hedef = interaction.options.getUser('kullanici') || interaction.user;
+    const skor = Math.floor(Math.random() * 101);
+
+    const embed = new EmbedBuilder()
+      .setColor('#f1fa8c')
+      .setTitle('✨ Waifu / Husbando Skor Kartı')
+      .setDescription(`<@${hedef.id}> kişisinin çekicilik skoru: **%${skor}** ${skor > 80 ? '👑 (Efsanevi)' : skor > 50 ? '💖 (Aşırı Tatlı)' : '💔 (Sıradan)'}`);
+    return interaction.reply({ embeds: [embed] });
+  }
+
+  if (commandName === 'anime-oner') {
+    const secilen = ANIME_LISTESI[Math.floor(Math.random() * ANIME_LISTESI.length)];
+    const embed = new EmbedBuilder()
+      .setColor('#ff79c6')
+      .setTitle(`📺 Önerilen Anime: ${secilen.isim}`)
+      .addFields(
+        { name: '🏷️ Tür', value: secilen.tur },
+        { name: '📝 Özet', value: secilen.desc }
+      )
+      .setFooter({ text: 'Kastuhino Anime Öneri Sistemi' });
+    return interaction.reply({ embeds: [embed] });
+  }
+
+  if (commandName === '1000-7') {
+    const embed = new EmbedBuilder()
+      .setColor('#ff0000')
+      .setTitle('🩸 1000 - 7 kaç eder?')
+      .setDescription('`993... 986... 979... 972...`\n\n*"Bu dünyadaki tüm kötülükler, kişinin yetersizliğinden kaynaklanır."*')
+      .setImage(GIFS.ghoul);
+    return interaction.reply({ embeds: [embed] });
+  }
+
+  if (commandName === 'avatar') {
+    const hedef = interaction.options.getUser('kullanici') || interaction.user;
+    const avatarURL = hedef.displayAvatarURL({ dynamic: true, size: 1024 });
+
+    const embed = new EmbedBuilder()
+      .setColor('#5865F2')
+      .setTitle(`🖼️ ${hedef.tag} Avatarı`)
+      .setImage(avatarURL);
+    return interaction.reply({ embeds: [embed] });
+  }
+
+  // YÖNETİCİ KONTROLÜ İSTEYEN KOMUTLAR
   const isOwnerOrAdmin = interaction.guild.ownerId === interaction.user.id || 
                          interaction.member.permissions.has(PermissionFlagsBits.Administrator);
 
@@ -192,7 +370,7 @@ client.on('interactionCreate', async (interaction) => {
     return interaction.reply({ content: '❌ Bu komutu sadece **Sunucu Sahibi** ve **Yöneticiler** kullanabilir!', ephemeral: true });
   }
 
-  // ÇEKİLİŞ BAŞLATMA
+  // ÇEKİLİŞ KOMUTU
   if (commandName === 'cekilis') {
     const odul = interaction.options.getString('odul');
     const saat = interaction.options.getInteger('saat');
@@ -217,15 +395,8 @@ client.on('interactionCreate', async (interaction) => {
     const row = new ActionRowBuilder().addComponents(button);
     const msg = await interaction.reply({ embeds: [embed], components: [row], fetchReply: true });
 
-    // Hafızaya Kayıt
-    cekilisler[msg.id] = {
-      odul,
-      kazananSayisi,
-      bitisZamani,
-      katilimcilar: []
-    };
+    cekilisler[msg.id] = { odul, kazananSayisi, bitisZamani, katilimcilar: [] };
 
-    // Zaman Dolduğunda Çekilişi Bitir
     setTimeout(async () => {
       const currentData = cekilisler[msg.id];
       if (!currentData) return;
@@ -267,7 +438,7 @@ client.on('interactionCreate', async (interaction) => {
     }, saat * 60 * 60 * 1000);
   }
 
-  // Diğer Moderasyon Komutları
+  // MODERASYON
   if (commandName === 'sil') {
     const miktar = interaction.options.getInteger('miktar');
     await interaction.channel.bulkDelete(miktar, true).catch(() => {});
