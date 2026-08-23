@@ -52,10 +52,7 @@ function createPartnerEmbed(guild, user, data) {
 
 const GIFS = {
   saril: 'https://media.giphy.com/media/lrr9DHuoKCVQTx22zs/giphy.gif',
-  tokat: 'https://media.giphy.com/media/Gf3AUz3eBNbTW/giphy.gif',
-  pat: 'https://media.giphy.com/media/5tmRHwTlHAA9Wv3TUf/giphy.gif',
-  yumruk: 'https://media.giphy.com/media/11tTNkKOScnWmI/giphy.gif',
-  bak: 'https://media.giphy.com/media/A8NNZlVuA1h5K/giphy.gif'
+  tokat: 'https://media.giphy.com/media/Gf3AUz3eBNbTW/giphy.gif'
 };
 
 const ANIME_LISTESI = [
@@ -82,7 +79,6 @@ const ANIME_KARAKTERLERI = [
   "Roronoa Zoro (One Piece) - Dünyanın En İyi Kılıç Ustası Olacak Adam 🏴‍☠️"
 ];
 
-// Yeni Oyun Verileri
 const TAHMIN_ANIME = [
   { ipucu: "Denizciler, Korsanlar, Şeytan Meyveleri ve One Piece!", cevap: "one piece" },
   { ipucu: "Kahve saçlı bir gencin bulduğu ölüm defteri...", cevap: "death note" },
@@ -100,16 +96,15 @@ function getYardimMenu() {
   return new ActionRowBuilder().addComponents(
     new StringSelectMenuBuilder()
       .setCustomId('yardim_menu')
-      .setPlaceholder('Kategori seç... (Moderasyon, Eğlence, Bilgi)')
+      .setPlaceholder('Menüden bir kategori seç...')
       .addOptions(
-        { label: '🛡️ Moderasyon Komutları', description: 'Sunucu yönetim ve koruma komutları', value: 'mod' },
-        { label: '🎉 Eğlence ve Oyunlar', description: 'Anime tahmin, gacha, sarıl, tokat ve daha fazlası', value: 'eglence' },
-        { label: '📚 Bilgi Komutları', description: 'Sunucu, kullanıcı ve bot bilgi komutları', value: 'bilgi' }
+        { label: '🛡️ Moderasyon Komutları', description: 'Sunucu yönetim ve temizlik araçları', value: 'mod' },
+        { label: '🎉 Eğlence ve Oyunlar', description: 'Anime tahmin, karakter bulmaca, gacha ve dahası', value: 'eglence' },
+        { label: '📚 Bilgi Komutları', description: 'Yardım ve partner istatistik sistemleri', value: 'bilgi' }
       )
   );
 }
 
-// Bot açıldığında Discord'a kaydedilecek TÜM Slash komutları
 client.once('ready', async () => {
   console.log(`[✓] ${client.user.tag} aktif ve komutlar yüklendi!`);
   client.user.setActivity('Kastuhino // Anime & Manga', { type: 3 });
@@ -140,7 +135,7 @@ client.once('ready', async () => {
   await client.application.commands.set(commands).catch(console.error);
 });
 
-// --- YENİ ÜYE KATILIM (WELCOME) SİSTEMİ ---
+// Hoş geldin (Welcome) Sistemi
 client.on('guildMemberAdd', async (member) => {
   const kanal = member.guild.channels.cache.get(HOSGELDIN_KANAL_ID);
   if (!kanal) return;
@@ -156,21 +151,35 @@ client.on('guildMemberAdd', async (member) => {
   kanal.send({ content: `Gözümüz yollarda kalmıştı, hoş geldin <@${member.id}>! 🌸`, embeds: [embed] });
 });
 
-// --- SLASH (/) KOMUTLARI VE MENÜLER ---
+// Etkileşimler (Slash Komutlar ve Menüler)
 client.on('interactionCreate', async (interaction) => {
   if (interaction.isStringSelectMenu() && interaction.customId === 'yardim_menu') {
     const secim = interaction.values[0];
     let embed = new EmbedBuilder().setColor('#6b21ff');
 
     if (secim === 'mod') {
-      embed.setTitle('🛡️ Moderasyon Komutları')
-           .setDescription('Komutları ister `k!` yazarak isterseniz `/` ile kullanabilirsin:\n\n`k!sil <sayı>` • Toplu mesaj siler');
+      embed.setTitle('🛡️ Moderasyon Komutları Listesi')
+           .setDescription('İster `k!` isterseniz `/` ön ekiyle kullanabilirsiniz:\n\n' +
+                           '🔸 **k!sil <sayı>** veya **/sil**\n' +
+                           '└ *Belirtilen miktarda sohbet mesajını hızlıca temizler.*');
     } else if (secim === 'eglence') {
-      embed.setTitle('🎉 Eğlence ve Oyun Komutları')
-           .setDescription('Komutları ister `k!` yazarak isterseniz `/` ile kullanabilirsin:\n\n`k!saril @üye` • Sarılma GIFi atar\n`k!tokat @üye` • Tokat atma GIFi atar\n`k!anime-oner` • Kaliteli anime önerir\n`k!anime-soz` • Rastgele anime sözü atar\n`k!gacha` • Şanslı anime karakteri düşür\n`k!waifu-puanla` • Waifu puanı hesaplar\n`k!anime-tahmin` • Anime tahmin oyunu\n`k!karakter-tahmin` • Karakter tahmin oyunu');
+      embed.setTitle('🎉 Eğlence ve Oyun Komutları Listesi')
+           .setDescription('İster `k!` isterseniz `/` ön ekiyle kullanabilirsiniz:\n\n' +
+                           '🎮 **k!anime-tahmin** / **/anime-tahmin**\n└ *İpuçlarından yola çıkarak doğru animeyi ilk bilen kazanır.*\n\n' +
+                           '👑 **k!karakter-tahmin** / **/karakter-tahmin**\n└ *Açıklanan anime karakterini tahmin etme oyunu.*\n\n' +
+                           '📺 **k!anime-oner** / **/anime-oner**\n└ *İzlemen için rastgele kaliteli bir anime önerir.*\n\n' +
+                           '💬 **k!anime-soz** / **/anime-soz**\n└ *Efsaneleşmiş rastgele anime sözleri atar.*\n\n' +
+                           '📦 **k!gacha** / **/gacha**\n└ *Şansına kutudan rastgele anime karakteri düşürür.*\n\n' +
+                           '💖 **k!waifu-puanla** / **/waifu-puanla**\n└ *Waifu veya husbando skorunuzu hesaplar.*\n\n' +
+                           '🤗 **k!saril @üye** / **/saril**\n└ *Etiketlediğin kişiye sıcak bir sarılma GIFi yollar.*\n\n' +
+                           '🖐️ **k!tokat @üye** / **/tokat**\n└ *Etiketlediğin kişiye eğlenceli bir tokat atma GIFi yollar.*');
     } else if (secim === 'bilgi') {
-      embed.setTitle('📚 Bilgi Komutları')
-           .setDescription('Komutları ister `k!` yazarak isterseniz `/` ile kullanabilirsin:\n\n`k!yardim` • Bu yardım menüsünü açar\n`k!partner-durum` • Partner istatistiklerini gösterir');
+      embed.setTitle('📚 Bilgi ve Sistem Komutları Listesi')
+           .setDescription('İster `k!` isterseniz `/` ön ekiyle kullanabilirsiniz:\n\n' +
+                           '📖 **k!yardim** veya **/yardim**\n' +
+                           '└ *Tüm bu kategorileri ve komutları içeren ana yardım menüsünü açar.*\n\n' +
+                           '📊 **k!partner-durum** veya **/partner-durum**\n' +
+                           '└ *Günlük, haftalık ve toplam partner istatistiklerinizi gösterir.*');
     }
 
     return interaction.update({ embeds: [embed], components: [getYardimMenu()] });
@@ -183,7 +192,7 @@ client.on('interactionCreate', async (interaction) => {
     const embed = new EmbedBuilder()
       .setColor('#6b21ff')
       .setTitle('✨ Kastuhino Komut Merkezi')
-      .setDescription('Aşağıdaki açılır menüden kategorileri seçerek tüm komutlara ulaşabilirsin.');
+      .setDescription('İster `k!` isterseniz `/` ön ekiyle kullanabilirsiniz:\nAşağıdaki açılır menüden kategori seçerek tüm komutları detaylıca inceleyebilirsin.');
     return interaction.reply({ embeds: [embed], components: [getYardimMenu()] });
   }
 
@@ -223,8 +232,9 @@ client.on('interactionCreate', async (interaction) => {
   }
 
   if (commandName === 'anime-tahmin') {
+    await interaction.deferReply();
     const secilenOyun = TAHMIN_ANIME[Math.floor(Math.random() * TAHMIN_ANIME.length)];
-    await interaction.reply({ embeds: [new EmbedBuilder().setColor('#57f287').setTitle('🎮 Anime Tahmin Oyunu Başladı!').setDescription(`💡 **İpucu:** ${secilenOyun.ipucu}\n\n*Bu anime hangisi? 30 saniye içinde sohbete adını yaz!*`)] });
+    await interaction.editReply({ embeds: [new EmbedBuilder().setColor('#57f287').setTitle('🎮 Anime Tahmin Oyunu Başladı!').setDescription(`💡 **İpucu:** ${secilenOyun.ipucu}\n\n*Bu anime hangisi? 30 saniye içinde sohbete adını yaz!*`)] });
     
     const filter = m => m.content.toLowerCase().includes(secilenOyun.cevap);
     try {
@@ -237,8 +247,9 @@ client.on('interactionCreate', async (interaction) => {
   }
 
   if (commandName === 'karakter-tahmin') {
+    await interaction.deferReply();
     const secilenOyun = TAHMIN_KARAKTER[Math.floor(Math.random() * TAHMIN_KARAKTER.length)];
-    await interaction.reply({ embeds: [new EmbedBuilder().setColor('#fee75c').setTitle('🎮 Karakter Tahmin Oyunu Başladı!').setDescription(`💡 **İpucu:** ${secilenOyun.ipucu}\n\n*Bu karakter kim? 30 saniye içinde sohbete adını yaz!*`)] });
+    await interaction.editReply({ embeds: [new EmbedBuilder().setColor('#fee75c').setTitle('🎮 Karakter Tahmin Oyunu Başladı!').setDescription(`💡 **İpucu:** ${secilenOyun.ipucu}\n\n*Bu karakter kim? 30 saniye içinde sohbete adını yaz!*`)] });
     
     const filter = m => m.content.toLowerCase().includes(secilenOyun.cevap);
     try {
@@ -260,7 +271,7 @@ client.on('interactionCreate', async (interaction) => {
   }
 });
 
-// --- METİN (k! ÖNEKİ) KOMUTLARI ---
+// Metin (k! Öneki) Komutları
 client.on('messageCreate', async (message) => {
   if (message.author.bot || !message.guild) return;
 
@@ -281,7 +292,7 @@ client.on('messageCreate', async (message) => {
     const embed = new EmbedBuilder()
       .setColor('#6b21ff')
       .setTitle('✨ Kastuhino Komut Merkezi')
-      .setDescription('Aşağıdaki açılır menüden kategori seçerek tüm komutları inceleyebilirsin.');
+      .setDescription('İster `k!` isterseniz `/` ön ekiyle kullanabilirsiniz:\nAşağıdaki açılır menüden kategori seçerek tüm komutları detaylıca inceleyebilirsin.');
     return message.reply({ embeds: [embed], components: [getYardimMenu()] });
   }
 
