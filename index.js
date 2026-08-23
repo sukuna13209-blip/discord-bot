@@ -5,8 +5,6 @@ const {
   PermissionFlagsBits, 
   EmbedBuilder, 
   ActionRowBuilder, 
-  ButtonBuilder, 
-  ButtonStyle,
   StringSelectMenuBuilder
 } = require('discord.js');
 const fs = require('fs');
@@ -20,6 +18,7 @@ const server = http.createServer((req, res) => {
 server.listen(process.env.PORT || 3000);
 
 const PARTNER_KANAL_ID = '1514756158831988876';
+const HOSGELDIN_KANAL_ID = 'BURAYA_HOS_GELDIN_KANAL_ID_YAZ'; // <-- Buraya hoş geldin kanalının ID'sini yaz
 const PREFIX = 'k!';
 
 const client = new Client({
@@ -32,8 +31,6 @@ const client = new Client({
   ]
 });
 
-// Çekiliş ve Partner Veritabanı
-const cekilisler = {};
 const PARTNER_FILE = './partners.json';
 let partners = {};
 if (fs.existsSync(PARTNER_FILE)) {
@@ -58,19 +55,28 @@ const GIFS = {
   tokat: 'https://media.giphy.com/media/Gf3AUz3eBNbTW/giphy.gif',
   pat: 'https://media.giphy.com/media/5tmRHwTlHAA9Wv3TUf/giphy.gif',
   yumruk: 'https://media.giphy.com/media/11tTNkKOScnWmI/giphy.gif',
-  bak: 'https://media.giphy.com/media/A8NNZlVuA1h5K/giphy.gif',
-  ghoul: 'https://media.giphy.com/media/10qcQYd6rcfS12/giphy.gif'
+  bak: 'https://media.giphy.com/media/A8NNZlVuA1h5K/giphy.gif'
 };
 
 const ANIME_LISTESI = [
   { isim: 'Hajime no Ippo', tur: 'Spor / Boks / Aksiyon', desc: 'Ezilen bir çocuğun boks dünyasında zirveye tırmanış hikayesi.' },
   { isim: 'Tokyo Ghoul', tur: 'Aksiyon / Gizem / Doğaüstü', desc: 'İnsan etiyle beslenen hortlakların dünyasına adım atan Kaneki’nin mücadelesi.' },
-  { isim: 'One Piece', tur: 'Macera / Shounen', desc: 'Korsanlar Kralı olmak isteyen Luffy ve tayfasının devasa macerası.' },
-  { isim: 'Bleach', tur: 'Aksiyon / Doğaüstü', desc: 'Ölüm Meleği güçleri kazanan Ichigo Kurosaki’nin savaşı.' },
-  { isim: 'Bungou Stray Dogs', tur: 'Gizem / Doğaüstü', desc: 'Özel doğaüstü güçlere sahip dedektiflerin ve mafyanın çatışması.' }
+  { isim: 'One Piece', tur: 'Macera / Shounen', desc: 'Korsanlar Kralı olmak isteyen Luffy ve tayfasının devasa macerası.' }
 ];
 
-// --- AÇILIR MENÜ (DROPDOWN) TASARIMI ---
+const ANIME_SOZLERI = [
+  "\"İnsanlar ancak kaybettikleri şeylerin değerini anlarlar.\" — Kaneki Ken (Tokyo Ghoul)",
+  "\"Korku zayıflıktır. Kendine karşı dürüst ol.\" — Vegeta (Dragon Ball)",
+  "\"Eğer gerçekten güçlü olmak istiyorsan, gülmeyi bırak ve savaşmaya başla!\" — L (Death Note)"
+];
+
+const ANIME_KARAKTERLERI = [
+  "Kaneki Ken (Tokyo Ghoul) - Efsanevi Hortlak 👑",
+  "Monkey D. Luffy (One Piece) - Korsan Kral Adayı 🍖",
+  "Levi Ackerman (Attack on Titan) - İnsanlığın En Güçlü Askeri ⚔️",
+  "Gojo Satoru (Jujutsu Kaisen) - Sınırsız Güç ✨"
+];
+
 function getYardimMenu() {
   return new ActionRowBuilder().addComponents(
     new StringSelectMenuBuilder()
@@ -88,29 +94,44 @@ client.once('ready', async () => {
   console.log(`[✓] ${client.user.tag} aktif ve komutlar yüklendi!`);
   client.user.setActivity('Kastuhino // Anime & Manga', { type: 3 });
 
-  // Tüm Slash Komutları Kaydı
+  // Tüm Slash komutlarını eksiksiz olarak buraya kaydediyoruz
   const commands = [
     new SlashCommandBuilder().setName('yardim').setDescription('Açılır menülü detaylı yardım menüsünü açar.'),
     new SlashCommandBuilder().setName('partner-durum').setDescription('Partnerlik istatistiklerinizi gösterir.'),
-    new SlashCommandBuilder().setName('sil').setDescription('Mesaj siler').setDefaultMemberPermissions(PermissionFlagsBits.Administrator).addIntegerOption(o => o.setName('miktar').setDescription('Sayı').setRequired(true)),
-    new SlashCommandBuilder().setName('ban').setDescription('Kullanıcıyı banlar').setDefaultMemberPermissions(PermissionFlagsBits.Administrator).addUserOption(o => o.setName('kullanici').setDescription('Üye').setRequired(true)),
-    new SlashCommandBuilder().setName('kick').setDescription('Kullanıcıyı atar').setDefaultMemberPermissions(PermissionFlagsBits.Administrator).addUserOption(o => o.setName('kullanici').setDescription('Üye').setRequired(true)),
-    new SlashCommandBuilder().setName('sustur').setDescription('Susturur').setDefaultMemberPermissions(PermissionFlagsBits.Administrator).addUserOption(o => o.setName('kullanici').setDescription('Üye').setRequired(true)),
-    new SlashCommandBuilder().setName('saril').setDescription('Sarıl').addUserOption(o => o.setName('kullanici').setDescription('Üye').setRequired(true)),
-    new SlashCommandBuilder().setName('tokat').setDescription('Tokat at').addUserOption(o => o.setName('kullanici').setDescription('Üye').setRequired(true)),
-    new SlashCommandBuilder().setName('pat-pat').setDescription('Kafa okşa').addUserOption(o => o.setName('kullanici').setDescription('Üye').setRequired(true)),
-    new SlashCommandBuilder().setName('yumruk').setDescription('Yumruk at').addUserOption(o => o.setName('kullanici').setDescription('Üye').setRequired(true)),
-    new SlashCommandBuilder().setName('bak').setDescription('Bakış at').addUserOption(o => o.setName('kullanici').setDescription('Üye').setRequired(true)),
-    new SlashCommandBuilder().setName('ship').setDescription('Uyum ölç').addUserOption(o => o.setName('birinci').setDescription('1. Üye').setRequired(true)).addUserOption(o => o.setName('ikinci').setDescription('2. Üye').setRequired(false)),
-    new SlashCommandBuilder().setName('waifu-puanla').setDescription('Waifu puanla').addUserOption(o => o.setName('kullanici').setDescription('Üye').setRequired(false)),
-    new SlashCommandBuilder().setName('anime-oner').setDescription('Rastgele anime önerir.'),
-    new SlashCommandBuilder().setName('1000-7').setDescription('Tokyo Ghoul göndermesi.'),
-    new SlashCommandBuilder().setName('avatar').setDescription('Avatar gösterir').addUserOption(o => o.setName('kullanici').setDescription('Üye').setRequired(false))
+    new SlashCommandBuilder()
+      .setName('sil')
+      .setDescription('Belirtilen miktarda mesaj siler.')
+      .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
+      .addIntegerOption(o => o.setName('miktar').setDescription('Silinecek mesaj sayısı').setRequired(true)),
+    new SlashCommandBuilder()
+      .setName('saril')
+      .setDescription('Etiketlenen kişiye sarılma GIFi atar.')
+      .addUserOption(o => o.setName('kullanici').setDescription('Sarılmak istediğin üye').setRequired(true)),
+    new SlashCommandBuilder()
+      .setName('tokat')
+      .setDescription('Etiketlenen kişiye tokat atma GIFi atar.')
+      .addUserOption(o => o.setName('kullanici').setDescription('Tokat atmak istediğin üye').setRequired(true))
   ];
   await client.application.commands.set(commands).catch(console.error);
 });
 
-// --- ETKİLEŞİMLER (SLASH VE MENÜLER) ---
+// --- YENİ ÜYE KATILIM (WELCOME) SİSTEMİ ---
+client.on('guildMemberAdd', async (member) => {
+  const kanal = member.guild.channels.cache.get(HOSGELDIN_KANAL_ID);
+  if (!kanal) return;
+
+  const embed = new EmbedBuilder()
+    .setColor('#6b21ff')
+    .setTitle('✨ Kastuhino // Anime & Manga\'ya Hoş Geldin Gülüm!')
+    .setDescription(`Hey <@${member.id}>, aramıza katıldın! 🎉\n\nSeninle beraber **${member.guild.memberCount}** kişi olduk.\nKuralları okumayı ve <#1514756158831988876> kanalına göz atmayı unutma!`)
+    .setImage('https://i.ibb.co/6y4G82d/image-b5e8a6.jpg')
+    .setTimestamp()
+    .setFooter({ text: 'Kastuhino Ailesi' });
+
+  kanal.send({ content: `Gözümüz yollarda kalmıştı, hoş geldin <@${member.id}>! 🌸`, embeds: [embed] });
+});
+
+// --- ETKİLEŞİMLER (SLASH KOMUTLARI VE MENÜLER) ---
 client.on('interactionCreate', async (interaction) => {
   if (interaction.isStringSelectMenu() && interaction.customId === 'yardim_menu') {
     const secim = interaction.values[0];
@@ -118,13 +139,13 @@ client.on('interactionCreate', async (interaction) => {
 
     if (secim === 'mod') {
       embed.setTitle('🛡️ Moderasyon Komutları')
-           .setDescription('İster `k!` isterseniz `/` ön ekiyle kullanabilirsiniz:\n\n`k!ban` • Kullanıcıyı yasaklar\n`k!unban` • Yasağı kaldırır\n`k!kick` • Kullanıcıyı atar\n`k!sustur` • Zaman aşımı uygular\n`k!sil` • Toplu mesaj siler\n`k!kanal-kilitle` • Kanalı kapatır\n`k!kanal-ac` • Kanalı açar\n`k!uyar` • Kullanıcıya uyarı verir\n`k!temizle` • Mesaj temizler\n`k!yavas-mod` • Yavaş mod ayarlar');
+           .setDescription('İster `k!` isterseniz `/` ön ekiyle kullanabilirsiniz:\n\n`/ban` • Kullanıcıyı yasaklar\n`/kick` • Kullanıcıyı atar\n`/sil` • Toplu mesaj siler');
     } else if (secim === 'eglence') {
       embed.setTitle('🎉 Eğlence Komutları')
-           .setDescription('İster `k!` isterseniz `/` ön ekiyle kullanabilirsiniz:\n\n`k!saril` • Sarılma GIFi\n`k!tokat` • Tokat atma GIFi\n`k!pat-pat` • Kafayı okşama\n`k!yumruk` • Yumruk atma\n`k!bak` • Şüpheci bakış\n`k!ship` • Aşk uyumu ölçer\n`k!waifu-puanla` • Waifu skoru hesaplar\n`k!anime-oner` • Kaliteli anime önerir\n`k!1000-7` • Tokyo Ghoul repliği\n`k!oyun` • Mini oyunlar\n`k!zar` • Zar atma');
+           .setDescription('İster `k!` isterseniz `/` ön ekiyle kullanabilirsiniz:\n\n`/saril` • Sarılma GIFi\n`/tokat` • Tokat atma GIFi\n`k!anime-oner` • Kaliteli anime önerir\n`k!gacha` • Günlük karakter düşür');
     } else if (secim === 'bilgi') {
       embed.setTitle('📚 Bilgi Komutları')
-           .setDescription('İster `k!` isterseniz `/` ön ekiyle kullanabilirsiniz:\n\n`k!yardim` • Bu yardım menüsü\n`k!partner-durum` • Partner istatistikleri\n`k!avatar` • Profil resmini gösterir\n`k!sunucu` • Sunucu bilgileri\n`k!sahip` • Bot yapımcısı bilgisi\n`k!bot-bilgisi` • Bot istatistikleri\n`k!ping` • Gecikme süresi\n`k!kanal` • Kanal detayları');
+           .setDescription('İster `k!` isterseniz `/` ön ekiyle kullanabilirsiniz:\n\n`/yardim` • Bu yardım menüsü\n`/partner-durum` • Partner istatistikleri');
     }
 
     return interaction.update({ embeds: [embed], components: [getYardimMenu()] });
@@ -150,16 +171,19 @@ client.on('interactionCreate', async (interaction) => {
     const hedef = interaction.options.getUser('kullanici');
     return interaction.reply({ embeds: [new EmbedBuilder().setColor('#ff79c6').setDescription(`🤗 <@${interaction.user.id}>, <@${hedef.id}> kişisine sarıldı!`).setImage(GIFS.saril)] });
   }
-  
+
   if (commandName === 'tokat') {
     const hedef = interaction.options.getUser('kullanici');
     return interaction.reply({ embeds: [new EmbedBuilder().setColor('#ff5555').setDescription(`🖐️ <@${interaction.user.id}>, <@${hedef.id}> kişisini tokatladı!`).setImage(GIFS.tokat)] });
   }
 
   if (commandName === 'sil') {
+    if (!interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
+      return interaction.reply({ content: '❌ Bu komutu kullanmak için yetkin yok!', ephemeral: true });
+    }
     const miktar = interaction.options.getInteger('miktar');
     await interaction.channel.bulkDelete(miktar, true).catch(() => {});
-    return interaction.reply({ content: `✅ ${miktar} mesaj silindi!`, ephemeral: true });
+    return interaction.reply({ content: `✅ ${miktar} mesaj başarıyla silindi!`, ephemeral: true });
   }
 });
 
@@ -167,7 +191,6 @@ client.on('interactionCreate', async (interaction) => {
 client.on('messageCreate', async (message) => {
   if (message.author.bot || !message.guild) return;
 
-  // Partner Takip
   if (message.channel.id === PARTNER_KANAL_ID) {
     if (message.content.includes('discord.gg/') || message.content.includes('discord.com/invite/')) {
       if (!partners[message.author.id]) partners[message.author.id] = { bugun: 0, hafta: 0, ay: 0, toplam: 0 };
@@ -181,7 +204,6 @@ client.on('messageCreate', async (message) => {
   const args = message.content.slice(PREFIX.length).trim().split(/ +/);
   const command = args.shift().toLowerCase();
 
-  // YARDIM
   if (command === 'yardim' || command === 'yardım') {
     const embed = new EmbedBuilder()
       .setColor('#6b21ff')
@@ -190,13 +212,11 @@ client.on('messageCreate', async (message) => {
     return message.reply({ embeds: [embed], components: [getYardimMenu()] });
   }
 
-  // PARTNER DURUM
   if (command === 'partner-durum') {
     if (!partners[message.author.id]) partners[message.author.id] = { bugun: 0, hafta: 0, ay: 0, toplam: 0 };
     return message.reply({ embeds: [createPartnerEmbed(message.guild, message.author, partners[message.author.id])] });
   }
 
-  // EĞLENCE KOMUTLARI
   if (command === 'saril' || command === 'sarıl') {
     const hedef = message.mentions.users.first();
     if (!hedef) return message.reply('Kime sarılacaksın? (`k!saril @üye`)');
@@ -214,7 +234,16 @@ client.on('messageCreate', async (message) => {
     return message.channel.send({ embeds: [new EmbedBuilder().setColor('#ff79c6').setTitle(`📺 ${secilen.isim}`).addFields({ name: 'Tür', value: secilen.tur }, { name: 'Özet', value: secilen.desc })] });
   }
 
-  // MODERASYON KOMUTLARI
+  if (command === 'anime-soz') {
+    const rastgeleSoz = ANIME_SOZLERI[Math.floor(Math.random() * ANIME_SOZLERI.length)];
+    return message.channel.send({ embeds: [new EmbedBuilder().setColor('#ff79c6').setTitle('💬 Günün Anime Sözü').setDescription(rastgeleSoz)] });
+  }
+
+  if (command === 'gacha') {
+    const cikanKarakter = ANIME_KARAKTERLERI[Math.floor(Math.random() * ANIME_KARAKTERLERI.length)];
+    return message.channel.send({ embeds: [new EmbedBuilder().setColor('#ffd700').setTitle('📦 Gacha Çekilişi').setDescription(`Tebrikler <@${message.author.id}>! Kutudan çıkan karakter:\n\n**${cikanKarakter}**`).setTimestamp()] });
+  }
+
   if (command === 'sil') {
     if (!message.member.permissions.has(PermissionFlagsBits.Administrator)) return message.reply('❌ Yetkin yok!');
     const miktar = parseInt(args[0]);
