@@ -90,16 +90,18 @@ function getYardimMenu() {
   );
 }
 
+// Bot açıldığında Discord'a kaydedilecek TÜM Slash komutları
 client.once('ready', async () => {
   console.log(`[✓] ${client.user.tag} aktif ve komutlar yüklendi!`);
   client.user.setActivity('Kastuhino // Anime & Manga', { type: 3 });
 
-  // Tüm Slash komutlarını eksiksiz olarak buraya kaydediyoruz
   const commands = [
     new SlashCommandBuilder().setName('yardim').setDescription('Açılır menülü detaylı yardım menüsünü açar.'),
     new SlashCommandBuilder().setName('partner-durum').setDescription('Partnerlik istatistiklerinizi gösterir.'),
     new SlashCommandBuilder().setName('anime-oner').setDescription('Rastgele kaliteli bir anime önerir.'),
-    new SlashCommandBuilder().setName('waifu-puanla').setDescription('Waifu skorunuzu hesaplar!'),
+    new SlashCommandBuilder().setName('anime-soz').setDescription('Günün rastgele anime sözünü atar.'),
+    new SlashCommandBuilder().setName('gacha').setDescription('Günlük rastgele anime karakteri düşürür.'),
+    new SlashCommandBuilder().setName('waifu-puanla').setDescription('Waifu / Husbando skorunuzu hesaplar.'),
     new SlashCommandBuilder()
       .setName('sil')
       .setDescription('Belirtilen miktarda mesaj siler.')
@@ -133,7 +135,7 @@ client.on('guildMemberAdd', async (member) => {
   kanal.send({ content: `Gözümüz yollarda kalmıştı, hoş geldin <@${member.id}>! 🌸`, embeds: [embed] });
 });
 
-// --- ETKİLEŞİMLER (SLASH KOMUTLARI VE MENÜLER) ---
+// --- SLASH (/) KOMUTLARI VE MENÜLER ---
 client.on('interactionCreate', async (interaction) => {
   if (interaction.isStringSelectMenu() && interaction.customId === 'yardim_menu') {
     const secim = interaction.values[0];
@@ -141,10 +143,10 @@ client.on('interactionCreate', async (interaction) => {
 
     if (secim === 'mod') {
       embed.setTitle('🛡️ Moderasyon Komutları')
-           .setDescription('İster `k!` isterseniz `/` ön ekiyle kullanabilirsiniz:\n\n`/ban` • Kullanıcıyı yasaklar\n`/kick` • Kullanıcıyı atar\n`/sil` • Toplu mesaj siler');
+           .setDescription('İster `k!` isterseniz `/` ön ekiyle kullanabilirsiniz:\n\n`/sil` • Toplu mesaj siler');
     } else if (secim === 'eglence') {
       embed.setTitle('🎉 Eğlence Komutları')
-           .setDescription('İster `k!` isterseniz `/` ön ekiyle kullanabilirsiniz:\n\n`/saril` • Sarılma GIFi\n`/tokat` • Tokat atma GIFi\n`/anime-oner` • Kaliteli anime önerir\n`/waifu-puanla` • Waifu skoru hesaplar');
+           .setDescription('İster `k!` isterseniz `/` ön ekiyle kullanabilirsiniz:\n\n`/saril` • Sarılma GIFi\n`/tokat` • Tokat atma GIFi\n`/anime-oner` • Kaliteli anime önerir\n`/anime-soz` • Rastgele anime sözü\n`/gacha` • Karakter düşür\n`/waifu-puanla` • Waifu puanı hesapla');
     } else if (secim === 'bilgi') {
       embed.setTitle('📚 Bilgi Komutları')
            .setDescription('İster `k!` isterseniz `/` ön ekiyle kullanabilirsiniz:\n\n`/yardim` • Bu yardım menüsü\n`/partner-durum` • Partner istatistikleri');
@@ -184,9 +186,19 @@ client.on('interactionCreate', async (interaction) => {
     return interaction.reply({ embeds: [new EmbedBuilder().setColor('#ff79c6').setTitle(`📺 ${secilen.isim}`).addFields({ name: 'Tür', value: secilen.tur }, { name: 'Özet', value: secilen.desc })] });
   }
 
+  if (commandName === 'anime-soz') {
+    const rastgeleSoz = ANIME_SOZLERI[Math.floor(Math.random() * ANIME_SOZLERI.length)];
+    return interaction.reply({ embeds: [new EmbedBuilder().setColor('#ff79c6').setTitle('💬 Günün Anime Sözü').setDescription(rastgeleSoz)] });
+  }
+
+  if (commandName === 'gacha') {
+    const cikanKarakter = ANIME_KARAKTERLERI[Math.floor(Math.random() * ANIME_KARAKTERLERI.length)];
+    return interaction.reply({ embeds: [new EmbedBuilder().setColor('#ffd700').setTitle('📦 Gacha Çekilişi').setDescription(`Tebrikler <@${interaction.user.id}>! Kutudan çıkan karakter:\n\n**${cikanKarakter}**`).setTimestamp()] });
+  }
+
   if (commandName === 'waifu-puanla') {
-    const rastgelePuan = Math.floor(Math.random() * 51) + 50; // 50 ile 100 arası
-    return interaction.reply({ embeds: [new EmbedBuilder().setColor('#ff79c6').setTitle('💖 Waifu / Husbando Puanlama').setDescription(`<@${interaction.user.id}> için yapılan analiz sonucunda puanın: **%${rastgelePuan}** ✨`] });
+    const rastgelePuan = Math.floor(Math.random() * 51) + 50;
+    return interaction.reply({ embeds: [new EmbedBuilder().setColor('#ff79c6').setTitle('💖 Waifu / Husbando Puanlama').setDescription(`<@${interaction.user.id}> için yapılan analiz sonucunda puanın: **%${rastgelePuan}** ✨`)] });
   }
 
   if (commandName === 'sil') {
@@ -199,7 +211,7 @@ client.on('interactionCreate', async (interaction) => {
   }
 });
 
-// --- METİN (Yazılı k!) KOMUTLARI ---
+// --- METİN (k! ÖNEKİ) KOMUTLARI ---
 client.on('messageCreate', async (message) => {
   if (message.author.bot || !message.guild) return;
 
@@ -254,6 +266,11 @@ client.on('messageCreate', async (message) => {
   if (command === 'gacha') {
     const cikanKarakter = ANIME_KARAKTERLERI[Math.floor(Math.random() * ANIME_KARAKTERLERI.length)];
     return message.channel.send({ embeds: [new EmbedBuilder().setColor('#ffd700').setTitle('📦 Gacha Çekilişi').setDescription(`Tebrikler <@${message.author.id}>! Kutudan çıkan karakter:\n\n**${cikanKarakter}**`).setTimestamp()] });
+  }
+
+  if (command === 'waifu-puanla') {
+    const rastgelePuan = Math.floor(Math.random() * 51) + 50;
+    return message.channel.send({ embeds: [new EmbedBuilder().setColor('#ff79c6').setTitle('💖 Waifu / Husbando Puanlama').setDescription(`<@${message.author.id}> için yapılan analiz sonucunda puanın: **%${rastgelePuan}** ✨`)] });
   }
 
   if (command === 'sil') {
