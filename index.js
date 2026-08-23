@@ -109,6 +109,55 @@ client.on('interactionCreate', async interaction => {
         await interaction.reply(`Partner Sunucunuz: ${kayit.sunucuAdi}\nLink: ${kayit.davetLinki}`);
     }
 });
+// Prefix (k!) Gelişmiş Partner ve Embed Sistemi
+client.on('messageCreate', async (message) => {
+  if (message.author.bot || !message.content.startsWith('k!')) return;
 
+  const args = message.content.slice(2).trim().split(/ +/);
+  const command = args.shift().toLowerCase();
+
+  // Her kullanıcının sayaç verisini kontrol et, yoksa sıfırdan oluştur
+  if (!partners[message.author.id]) {
+    partners[message.author.id] = { bugun: 0, hafta: 0, ay: 0, toplam: 0 };
+  }
+
+  // Kullanım: k!partner-ekle
+  if (command === 'partner-ekle') {
+    // Sayıları 1 artır
+    partners[message.author.id].bugun += 1;
+    partners[message.author.id].hafta += 1;
+    partners[message.author.id].ay += 1;
+    partners[message.author.id].toplam += 1;
+    savePartners();
+
+    return message.reply(`✅ Bir partner daha eklendi! Toplam partner sayın: **${partners[message.author.id].toplam}**`);
+  }
+
+  // Kullanım: k!partner-durum
+  if (command === 'partner-durum') {
+    const kayit = partners[message.author.id];
+
+    // Fotoğraftaki görünümü oluşturan Embed tasarımı
+    const durumEmbed = new EmbedBuilder()
+      .setColor('#6b21ff') // Sol kenardaki mor şerit
+      .setAuthor({ 
+        name: message.author.tag, 
+        iconURL: message.author.displayAvatarURL({ dynamic: true }) 
+      })
+      .setTitle('Partnerlik Profili')
+      .setDescription(
+        `**Bugünlük Partnerin:** ${kayit.bugun}\n` +
+        `**Haftalık Partnerin:** ${kayit.hafta}\n` +
+        `**Aylık Partnerin:** ${kayit.ay}\n` +
+        `**Toplam Partnerin:** ${kayit.toplam}\n` +
+        `**Haftalık Sıralaman:** #1`
+      )
+      // Fotoğraftaki alt afiş kısmı (Kendi resminin linkini buraya koyabilirsin)
+     .setImage('https://i.postimg.cc/bvrhKD14/70ba521c-e278-4697-9f02-33cea9a96121.jpg')
+      .setTimestamp();
+
+    return message.reply({ embeds: [durumEmbed] });
+  }
+});
 // Bot Giriş İşlemi
 client.login(process.env.DISCORD_TOKEN);
