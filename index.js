@@ -61,20 +61,39 @@ const GIFS = {
 const ANIME_LISTESI = [
   { isim: 'Hajime no Ippo', tur: 'Spor / Boks / Aksiyon', desc: 'Ezilen bir çocuğun boks dünyasında zirveye tırmanış hikayesi.' },
   { isim: 'Tokyo Ghoul', tur: 'Aksiyon / Gizem / Doğaüstü', desc: 'İnsan etiyle beslenen hortlakların dünyasına adım atan Kaneki’nin mücadelesi.' },
-  { isim: 'One Piece', tur: 'Macera / Shounen', desc: 'Korsanlar Kralı olmak isteyen Luffy ve tayfasının devasa macerası.' }
+  { isim: 'One Piece', tur: 'Macera / Shounen', desc: 'Korsanlar Kralı olmak isteyen Luffy ve tayfasının devasa macerası.' },
+  { isim: 'Bleach', tur: 'Aksiyon / Doğaüstü', desc: 'Shinigami güçleri kazanan Ichigo Kurosaki\'nin ruhlar dünyasındaki maceraları.' },
+  { isim: 'Death Note', tur: 'Gizem / Psikolojik / Gerilim', desc: 'Deftere yazdığı kişileri öldürebilen bir gencin adalet arayışı.' }
 ];
 
 const ANIME_SOZLERI = [
   "\"İnsanlar ancak kaybettikleri şeylerin değerini anlarlar.\" — Kaneki Ken (Tokyo Ghoul)",
   "\"Korku zayıflıktır. Kendine karşı dürüst ol.\" — Vegeta (Dragon Ball)",
-  "\"Eğer gerçekten güçlü olmak istiyorsan, gülmeyi bırak ve savaşmaya başla!\" — L (Death Note)"
+  "\"Eğer gerçekten güçlü olmak istiyorsan, gülmeyi bırak ve savaşmaya başla!\" — L (Death Note)",
+  "\"Korsanlar kötüdür mi? Denizciler adildir mi? Bu kavramlar tarih boyunca değişmiştir!\" — Donquixote Doflamingo (One Piece)"
 ];
 
 const ANIME_KARAKTERLERI = [
   "Kaneki Ken (Tokyo Ghoul) - Efsanevi Hortlak 👑",
   "Monkey D. Luffy (One Piece) - Korsan Kral Adayı 🍖",
   "Levi Ackerman (Attack on Titan) - İnsanlığın En Güçlü Askeri ⚔️",
-  "Gojo Satoru (Jujutsu Kaisen) - Sınırsız Güç ✨"
+  "Gojo Satoru (Jujutsu Kaisen) - Sınırsız Güç ✨",
+  "Ichigo Kurosaki (Bleach) - Turuncu Saçlı Shinigami 🗡️",
+  "Roronoa Zoro (One Piece) - Dünyanın En İyi Kılıç Ustası Olacak Adam 🏴‍☠️"
+];
+
+// Yeni Oyun Verileri
+const TAHMIN_ANIME = [
+  { ipucu: "Denizciler, Korsanlar, Şeytan Meyveleri ve One Piece!", cevap: "one piece" },
+  { ipucu: "Kahve saçlı bir gencin bulduğu ölüm defteri...", cevap: "death note" },
+  { ipucu: "Boks salonunda geçen ve Ippo'nun başrol olduğu efsane spor animesi.", cevap: "hajime no ippo" },
+  { ipucu: "İnsan eti yiyen hortlaklar ve Kaneki Ken...", cevap: "tokyo ghoul" }
+];
+
+const TAHMIN_KARAKTER = [
+  { ipucu: "Gözlerini genelde kapalı tutan, sonsuzluk ve sınırsızlık güçlerine sahip öğretmen.", cevap: "gojo satoru" },
+  { ipucu: "Kameramanların bile hızına yetişemediği, temizlik hastası Survey Corps üyesi.", cevap: "levi ackerman" },
+  { ipucu: "Et yemeye bayılan, hasır şapkalı korsan kaptan.", cevap: "luffy" }
 ];
 
 function getYardimMenu() {
@@ -84,7 +103,7 @@ function getYardimMenu() {
       .setPlaceholder('Kategori seç... (Moderasyon, Eğlence, Bilgi)')
       .addOptions(
         { label: '🛡️ Moderasyon Komutları', description: 'Sunucu yönetim ve koruma komutları', value: 'mod' },
-        { label: '🎉 Eğlence Komutları', description: 'Anime, oyun ve etkileşim komutları', value: 'eglence' },
+        { label: '🎉 Eğlence ve Oyunlar', description: 'Anime tahmin, gacha, sarıl, tokat ve daha fazlası', value: 'eglence' },
         { label: '📚 Bilgi Komutları', description: 'Sunucu, kullanıcı ve bot bilgi komutları', value: 'bilgi' }
       )
   );
@@ -102,6 +121,8 @@ client.once('ready', async () => {
     new SlashCommandBuilder().setName('anime-soz').setDescription('Günün rastgele anime sözünü atar.'),
     new SlashCommandBuilder().setName('gacha').setDescription('Günlük rastgele anime karakteri düşürür.'),
     new SlashCommandBuilder().setName('waifu-puanla').setDescription('Waifu / Husbando skorunuzu hesaplar.'),
+    new SlashCommandBuilder().setName('anime-tahmin').setDescription('Eğlenceli bir anime tahmin oyunu başlatır!'),
+    new SlashCommandBuilder().setName('karakter-tahmin').setDescription('Eğlenceli bir karakter tahmin oyunu başlatır!'),
     new SlashCommandBuilder()
       .setName('sil')
       .setDescription('Belirtilen miktarda mesaj siler.')
@@ -143,13 +164,13 @@ client.on('interactionCreate', async (interaction) => {
 
     if (secim === 'mod') {
       embed.setTitle('🛡️ Moderasyon Komutları')
-           .setDescription('İster `k!` isterseniz `/` ön ekiyle kullanabilirsiniz:\n\n`/sil` • Toplu mesaj siler');
+           .setDescription('Komutları ister `k!` yazarak isterseniz `/` ile kullanabilirsin:\n\n`k!sil <sayı>` • Toplu mesaj siler');
     } else if (secim === 'eglence') {
-      embed.setTitle('🎉 Eğlence Komutları')
-           .setDescription('İster `k!` isterseniz `/` ön ekiyle kullanabilirsiniz:\n\n`/saril` • Sarılma GIFi\n`/tokat` • Tokat atma GIFi\n`/anime-oner` • Kaliteli anime önerir\n`/anime-soz` • Rastgele anime sözü\n`/gacha` • Karakter düşür\n`/waifu-puanla` • Waifu puanı hesapla');
+      embed.setTitle('🎉 Eğlence ve Oyun Komutları')
+           .setDescription('Komutları ister `k!` yazarak isterseniz `/` ile kullanabilirsin:\n\n`k!saril @üye` • Sarılma GIFi atar\n`k!tokat @üye` • Tokat atma GIFi atar\n`k!anime-oner` • Kaliteli anime önerir\n`k!anime-soz` • Rastgele anime sözü atar\n`k!gacha` • Şanslı anime karakteri düşür\n`k!waifu-puanla` • Waifu puanı hesaplar\n`k!anime-tahmin` • Anime tahmin oyunu\n`k!karakter-tahmin` • Karakter tahmin oyunu');
     } else if (secim === 'bilgi') {
       embed.setTitle('📚 Bilgi Komutları')
-           .setDescription('İster `k!` isterseniz `/` ön ekiyle kullanabilirsiniz:\n\n`/yardim` • Bu yardım menüsü\n`/partner-durum` • Partner istatistikleri');
+           .setDescription('Komutları ister `k!` yazarak isterseniz `/` ile kullanabilirsin:\n\n`k!yardim` • Bu yardım menüsünü açar\n`k!partner-durum` • Partner istatistiklerini gösterir');
     }
 
     return interaction.update({ embeds: [embed], components: [getYardimMenu()] });
@@ -162,7 +183,7 @@ client.on('interactionCreate', async (interaction) => {
     const embed = new EmbedBuilder()
       .setColor('#6b21ff')
       .setTitle('✨ Kastuhino Komut Merkezi')
-      .setDescription('Aşağıdaki açılır menüden kategorileri seçerek tüm komutlara ulaşabilirsiniz.');
+      .setDescription('Aşağıdaki açılır menüden kategorileri seçerek tüm komutlara ulaşabilirsin.');
     return interaction.reply({ embeds: [embed], components: [getYardimMenu()] });
   }
 
@@ -199,6 +220,34 @@ client.on('interactionCreate', async (interaction) => {
   if (commandName === 'waifu-puanla') {
     const rastgelePuan = Math.floor(Math.random() * 51) + 50;
     return interaction.reply({ embeds: [new EmbedBuilder().setColor('#ff79c6').setTitle('💖 Waifu / Husbando Puanlama').setDescription(`<@${interaction.user.id}> için yapılan analiz sonucunda puanın: **%${rastgelePuan}** ✨`)] });
+  }
+
+  if (commandName === 'anime-tahmin') {
+    const secilenOyun = TAHMIN_ANIME[Math.floor(Math.random() * TAHMIN_ANIME.length)];
+    await interaction.reply({ embeds: [new EmbedBuilder().setColor('#57f287').setTitle('🎮 Anime Tahmin Oyunu Başladı!').setDescription(`💡 **İpucu:** ${secilenOyun.ipucu}\n\n*Bu anime hangisi? 30 saniye içinde sohbete adını yaz!*`)] });
+    
+    const filter = m => m.content.toLowerCase().includes(secilenOyun.cevap);
+    try {
+      const collected = await interaction.channel.awaitMessages({ filter, max: 1, time: 30000, errors: ['time'] });
+      const winner = collected.first();
+      return interaction.followUp({ content: `🎉 Tebrikler <@${winner.author.id}>! Doğru bildin: **${secilenOyun.cevap.toUpperCase()}**!` });
+    } catch {
+      return interaction.followUp({ content: `⏳ Süre bitti! Kimse doğru tahmin edemedi. Doğru cevap: **${secilenOyun.cevap.toUpperCase()}** idi.` });
+    }
+  }
+
+  if (commandName === 'karakter-tahmin') {
+    const secilenOyun = TAHMIN_KARAKTER[Math.floor(Math.random() * TAHMIN_KARAKTER.length)];
+    await interaction.reply({ embeds: [new EmbedBuilder().setColor('#fee75c').setTitle('🎮 Karakter Tahmin Oyunu Başladı!').setDescription(`💡 **İpucu:** ${secilenOyun.ipucu}\n\n*Bu karakter kim? 30 saniye içinde sohbete adını yaz!*`)] });
+    
+    const filter = m => m.content.toLowerCase().includes(secilenOyun.cevap);
+    try {
+      const collected = await interaction.channel.awaitMessages({ filter, max: 1, time: 30000, errors: ['time'] });
+      const winner = collected.first();
+      return interaction.followUp({ content: `👑 Helal olsun <@${winner.author.id}>! Doğru karakter: **${secilenOyun.cevap.toUpperCase()}**!` });
+    } catch {
+      return interaction.followUp({ content: `⏳ Süre doldu! Kimse bilemedi. Doğru cevap: **${secilenOyun.cevap.toUpperCase()}** idi.` });
+    }
   }
 
   if (commandName === 'sil') {
@@ -271,6 +320,34 @@ client.on('messageCreate', async (message) => {
   if (command === 'waifu-puanla') {
     const rastgelePuan = Math.floor(Math.random() * 51) + 50;
     return message.channel.send({ embeds: [new EmbedBuilder().setColor('#ff79c6').setTitle('💖 Waifu / Husbando Puanlama').setDescription(`<@${message.author.id}> için yapılan analiz sonucunda puanın: **%${rastgelePuan}** ✨`)] });
+  }
+
+  if (command === 'anime-tahmin') {
+    const secilenOyun = TAHMIN_ANIME[Math.floor(Math.random() * TAHMIN_ANIME.length)];
+    await message.channel.send({ embeds: [new EmbedBuilder().setColor('#57f287').setTitle('🎮 Anime Tahmin Oyunu Başladı!').setDescription(`💡 **İpucu:** ${secilenOyun.ipucu}\n\n*Bu anime hangisi? 30 saniye içinde sohbete adını yaz!*`)] });
+    
+    const filter = m => m.content.toLowerCase().includes(secilenOyun.cevap);
+    try {
+      const collected = await message.channel.awaitMessages({ filter, max: 1, time: 30000, errors: ['time'] });
+      const winner = collected.first();
+      return message.channel.send(`🎉 Tebrikler <@${winner.author.id}>! Doğru bildin: **${secilenOyun.cevap.toUpperCase()}**!`);
+    } catch {
+      return message.channel.send(`⏳ Süre bitti! Kimse doğru tahmin edemedi. Doğru cevap: **${secilenOyun.cevap.toUpperCase()}** idi.`);
+    }
+  }
+
+  if (command === 'karakter-tahmin') {
+    const secilenOyun = TAHMIN_KARAKTER[Math.floor(Math.random() * TAHMIN_KARAKTER.length)];
+    await message.channel.send({ embeds: [new EmbedBuilder().setColor('#fee75c').setTitle('🎮 Karakter Tahmin Oyunu Başladı!').setDescription(`💡 **İpucu:** ${secilenOyun.ipucu}\n\n*Bu karakter kim? 30 saniye içinde sohbete adını yaz!*`)] });
+    
+    const filter = m => m.content.toLowerCase().includes(secilenOyun.cevap);
+    try {
+      const collected = await message.channel.awaitMessages({ filter, max: 1, time: 30000, errors: ['time'] });
+      const winner = collected.first();
+      return message.channel.send(`👑 Helal olsun <@${winner.author.id}>! Doğru karakter: **${secilenOyun.cevap.toUpperCase()}**!`);
+    } catch {
+      return message.channel.send(`⏳ Süre doldu! Kimse bilemedi. Doğru cevap: **${secilenOyun.cevap.toUpperCase()}** idi.`);
+    }
   }
 
   if (command === 'sil') {
