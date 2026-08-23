@@ -61,14 +61,14 @@ function createPartnerEmbed(guild, user, data) {
     .setTimestamp();
 }
 
-// GIF Bağlantıları
+// Doğrudan Çalışan GIF Bağlantıları
 const GIFS = {
-  saril: 'https://media.tenor.com/kCZ3To233D8AAAAC/anime-hug.gif',
-  tokat: 'https://media.tenor.com/E3B2MjhiuS8AAAAC/anime-slap.gif',
-  pat: 'https://media.tenor.com/YT-yK49iQ2EAAAAC/anime-head-pat.gif',
-  yumruk: 'https://media.tenor.com/G9yw3Hz9Y3UAAAAC/anime-punch.gif',
-  bak: 'https://media.tenor.com/2s_m3K6WcKMAAAAC/anime-stare.gif',
-  ghoul: 'https://media.tenor.com/2A7fJ6wR6pIAAAAC/kaneki-tokyo-ghoul.gif'
+  saril: 'https://media.giphy.com/media/lrr9DHuoKCVQTx22zs/giphy.gif',
+  tokat: 'https://media.giphy.com/media/Gf3AUz3eBNbTW/giphy.gif',
+  pat: 'https://media.giphy.com/media/5tmRHwTlHAA9Wv3TUf/giphy.gif',
+  yumruk: 'https://media.giphy.com/media/11tTNkKOScnWmI/giphy.gif',
+  bak: 'https://media.giphy.com/media/A8NNZlVuA1h5K/giphy.gif',
+  ghoul: 'https://media.giphy.com/media/10qcQYd6rcfS12/giphy.gif'
 };
 
 // Anime Öneri Veritabanı
@@ -86,7 +86,7 @@ client.once('ready', async () => {
   console.log(`[✓] ${client.user.tag} başarıyla giriş yaptı!`);
 
   // Aktivite Ayarlama
-  client.user.setActivity('Kastuhino // Anime & Manga', { type: 3 }); // 3 = Watching (İzliyor)
+  client.user.setActivity('Kastuhino // Anime & Manga', { type: 3 });
 
   const commands = [
     new SlashCommandBuilder().setName('partner-durum').setDescription('Partnerlik profili kartınızı gösterir.'),
@@ -256,7 +256,7 @@ client.on('interactionCreate', async (interaction) => {
     return interaction.reply({ embeds: [embed] });
   }
 
-  // ANIME & EĞLENCE KOMUTLARI UYGULAMASI
+  // ANIME & EĞLENCE KOMUTLARI
   if (commandName === 'saril') {
     const hedef = interaction.options.getUser('kullanici');
     const embed = new EmbedBuilder()
@@ -306,7 +306,6 @@ client.on('interactionCreate', async (interaction) => {
     const birinci = interaction.options.getUser('birinci');
     const ikinci = interaction.options.getUser('ikinci') || interaction.user;
     
-    // Rastgele Uyum Yüzdesi
     const uyum = Math.floor(Math.random() * 101);
     const doluluk = Math.round(uyum / 10);
     const bar = '💖'.repeat(doluluk) + '🖤'.repeat(10 - doluluk);
@@ -362,7 +361,7 @@ client.on('interactionCreate', async (interaction) => {
     return interaction.reply({ embeds: [embed] });
   }
 
-  // YÖNETİCİ KONTROLÜ İSTEYEN KOMUTLAR
+  // YÖNETİCİ KONTROLÜ
   const isOwnerOrAdmin = interaction.guild.ownerId === interaction.user.id || 
                          interaction.member.permissions.has(PermissionFlagsBits.Administrator);
 
@@ -370,7 +369,7 @@ client.on('interactionCreate', async (interaction) => {
     return interaction.reply({ content: '❌ Bu komutu sadece **Sunucu Sahibi** ve **Yöneticiler** kullanabilir!', ephemeral: true });
   }
 
-  // ÇEKİLİŞ KOMUTU
+  // ÇEKİLİŞ
   if (commandName === 'cekilis') {
     const odul = interaction.options.getString('odul');
     const saat = interaction.options.getInteger('saat');
