@@ -9,6 +9,9 @@ const server = http.createServer((req, res) => {
 });
 server.listen(process.env.PORT || 3000);
 
+// Otomatik partner algılamanın çalışacağı ÖZEL KANAL ID'Sİ
+const PARTNER_KANAL_ID = '1514756158831988876';
+
 // Bot İstemcisi ve İzinler
 const client = new Client({
   intents: [
@@ -113,16 +116,18 @@ client.on('messageCreate', async (message) => {
     partners[message.author.id] = { bugun: 0, hafta: 0, ay: 0, toplam: 0 };
   }
 
-  // 1. OTOMATİK PARTNER ALGILAMA (discord.gg linki görünce)
-  if (message.content.includes('discord.gg/') || message.content.includes('discord.com/invite/')) {
-    partners[message.author.id].bugun += 1;
-    partners[message.author.id].hafta += 1;
-    partners[message.author.id].ay += 1;
-    partners[message.author.id].toplam += 1;
-    savePartners();
+  // 1. OTOMATİK PARTNER ALGILAMA (Sadece belirttiğin kanalda çalışır)
+  if (message.channel.id === PARTNER_KANAL_ID) {
+    if (message.content.includes('discord.gg/') || message.content.includes('discord.com/invite/')) {
+      partners[message.author.id].bugun += 1;
+      partners[message.author.id].hafta += 1;
+      partners[message.author.id].ay += 1;
+      partners[message.author.id].toplam += 1;
+      savePartners();
 
-    const embed = createPartnerEmbed(message.guild, message.author, partners[message.author.id]);
-    return message.reply({ content: '✅ Partnerlik başarıyla sayıldı!', embeds: [embed] });
+      const embed = createPartnerEmbed(message.guild, message.author, partners[message.author.id]);
+      return message.reply({ content: '✅ Partnerlik başarıyla sayıldı!', embeds: [embed] });
+    }
   }
 
   // 2. k!sustur Komutu
