@@ -67,7 +67,7 @@ const ANIME_SOZLERI = [
   "\"İnsanlar ancak kaybettikleri şeylerin değerini anlarlar.\" — Kaneki Ken (Tokyo Ghoul)",
   "\"Korku zayıflıktır. Kendine karşı dürüst ol.\" — Vegeta (Dragon Ball)",
   "\"Eğer gerçekten güçlü olmak istiyorsan, gülmeyi bırak ve savaşmaya başla!\" — L (Death Note)",
-  "\"Korsanlar kötüdür mi? Denizciler adildir mi? Bu kavramlar tarih boyunca değişmiştir!\" — Donquixote Doflamingo (One Piece)"
+  "\"Korsanlar kötüdür mi? Denizciler adildir mi? Bu kavram tarih boyunca değişmiştir!\" — Donquixote Doflamingo (One Piece)"
 ];
 
 const ANIME_KARAKTERLERI = [
@@ -105,17 +105,16 @@ function getYardimMenu() {
   );
 }
 
-// Ana Yardım Menüsü İçeriği (Örnek görsele göre tasarlandı)
 function getAnaSayfaEmbed(username) {
   return new EmbedBuilder()
     .setColor('#6b21ff')
     .setTitle('🛡️ Kastuhino Bot — Kapsamlı Yardım & Kontrol Paneli')
     .setDescription(`Merhaba **${username}**, Kastuhino Bot komut rehberine hoş geldin.\n\n` +
                     `🔹 **Bot Ön Eki (Prefix):** \`k!\` veya \`/\`\n\n` +
-                    `Aşağıdaki açılış menüsünü kullanarak kategoriler arasında geçiş yapabilirsiniz.\n\n` +
+                    `Aşağıdaki açılır menüyü kullanarak kategoriler arasında geçiş yapabilirsiniz.\n\n` +
                     `📁 **Kategoriler:**\n` +
-                    `• 🛡️ **Moderasyon:** Ban, mute, rol, uyarı ve mesaj temizleme sistemi\n` +
-                    `• 🎉 **Eğlence ve Oyunlar:** Anime tahmin, karakter bulmaca, gacha, sarıl ve tokat komutları\n` +
+                    `• 🛡️ **Moderasyon:** Ban, kick, mute, yavaş mod ve mesaj temizleme\n` +
+                    `• 🎉 **Eğlence ve Oyunlar:** Anime tahmin, karakter bulmaca, gacha, sarıl ve tokat\n` +
                     `• 📚 **Bilgi ve Sistemler:** Yardım paneli ve partner istatistik sistemleri`)
     .setTimestamp();
 }
@@ -138,6 +137,29 @@ client.once('ready', async () => {
       .setDescription('Belirtilen miktarda mesaj siler.')
       .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
       .addIntegerOption(o => o.setName('miktar').setDescription('Silinecek mesaj sayısı').setRequired(true)),
+    new SlashCommandBuilder()
+      .setName('kick')
+      .setDescription('Etiketlenen üyeyi sunucudan atar.')
+      .setDefaultMemberPermissions(PermissionFlagsBits.KickMembers)
+      .addUserOption(o => o.setName('kullanici').setDescription('Atılacak üye').setRequired(true))
+      .addStringOption(o => o.setName('sebep').setDescription('Atılma sebebi').setRequired(false)),
+    new SlashCommandBuilder()
+      .setName('ban')
+      .setDescription('Etiketlenen üyeyi sunucudan yasaklar.')
+      .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers)
+      .addUserOption(o => o.setName('kullanici').setDescription('Yasaklanacak üye').setRequired(true))
+      .addStringOption(o => o.setName('sebep').setDescription('Yasaklama sebebi').setRequired(false)),
+    new SlashCommandBuilder()
+      .setName('timeout')
+      .setDescription('Etiketlenen üyeye süre aşımı (mute) atar.')
+      .setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers)
+      .addUserOption(o => o.setName('kullanici').setDescription('Mutelenecek üye').setRequired(true))
+      .addIntegerOption(o => o.setName('sure').setDescription('Süre (Dakika cinsinden)').setRequired(true)),
+    new SlashCommandBuilder()
+      .setName('slowmode')
+      .setDescription('Kanalın yavaş mod süresini ayarlar.')
+      .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels)
+      .addIntegerOption(o => o.setName('saniye').setDescription('Saniye (Sıfır kapatır)').setRequired(true)),
     new SlashCommandBuilder()
       .setName('saril')
       .setDescription('Etiketlenen kişiye sarılma GIFi atar.')
@@ -175,8 +197,16 @@ client.on('interactionCreate', async (interaction) => {
     if (secim === 'mod') {
       embed.setTitle('🛡️ Moderasyon Komutları Listesi')
            .setDescription('İster `k!` isterseniz `/` ön ekiyle kullanabilirsiniz:\n\n' +
-                           '🔸 **k!sil &lt;sayı&gt;** veya **/sil**\n' +
-                           '└ *Belirtilen miktarda sohbet mesajını hızlıca temizler.*');
+                           '🔸 **k!sil <sayı>** veya **/sil**\n' +
+                           '└ *Belirtilen miktarda sohbet mesajını hızlıca temizler.*\n\n' +
+                           '🔸 **k!kick @üye <sebep>** veya **/kick**\n' +
+                           '└ *Belirtilen üyeyi sunucudan uzaklaştırır.*\n\n' +
+                           '🔸 **k!ban @üye <sebep>** veya **/ban**\n' +
+                           '└ *Belirtilen üyeyi sunucudan kalıcı olarak yasaklar.*\n\n' +
+                           '🔸 **k!timeout @üye <dakika>** veya **/timeout**\n' +
+                           '└ *Belirtilen üyeye süreli zaman aşımı (mute) uygular.*\n\n' +
+                           '🔸 **k!slowmode <saniye>** veya **/slowmode**\n' +
+                           '└ *Bulunduğunuz kanalın mesaj atma yavaş mod hızını ayarlar.*');
     } else if (secim === 'eglence') {
       embed.setTitle('🎉 Eğlence ve Oyun Komutları Listesi')
            .setDescription('İster `k!` isterseniz `/` ön ekiyle kullanabilirsiniz:\n\n' +
@@ -184,7 +214,7 @@ client.on('interactionCreate', async (interaction) => {
                            '└ *İpuçlarından yola çıkarak doğru animeyi ilk bilen kazanır.*\n\n' +
                            '👑 **k!karakter-tahmin** / **/karakter-tahmin**\n' +
                            '└ *Açıklanan anime karakterini tahmin etme oyunu.*\n\n' +
-                           '🟦 **k!anime-oner** / **/anime-oner**\n' +
+                           '📺 **k!anime-oner** / **/anime-oner**\n' +
                            '└ *İzlemen için rastgele kaliteli bir anime önerir.*\n\n' +
                            '💬 **k!anime-soz** / **/anime-soz**\n' +
                            '└ *Efsaneleşmiş rastgele anime sözleri atar.*\n\n' +
@@ -288,6 +318,48 @@ client.on('interactionCreate', async (interaction) => {
     await interaction.channel.bulkDelete(miktar, true).catch(() => {});
     return interaction.reply({ content: `✅ ${miktar} mesaj başarıyla silindi!`, ephemeral: true });
   }
+
+  if (commandName === 'kick') {
+    if (!interaction.member.permissions.has(PermissionFlagsBits.KickMembers)) {
+      return interaction.reply({ content: '❌ Bu komutu kullanmak için yetkin yok!', ephemeral: true });
+    }
+    const hedef = interaction.options.getMember('kullanici');
+    const sebep = interaction.options.getString('sebep') || 'Sebep belirtilmedi';
+    if (!hedef) return interaction.reply({ content: '❌ Üye bulunamadı!', ephemeral: true });
+    await hedef.kick(sebep).catch(() => {});
+    return interaction.reply({ content: `✅ ${hedef.user.tag} sunucudan atıldı! Sebep: ${sebep}`, ephemeral: true });
+  }
+
+  if (commandName === 'ban') {
+    if (!interaction.member.permissions.has(PermissionFlagsBits.BanMembers)) {
+      return interaction.reply({ content: '❌ Bu komutu kullanmak için yetkin yok!', ephemeral: true });
+    }
+    const hedef = interaction.options.getMember('kullanici');
+    const sebep = interaction.options.getString('sebep') || 'Sebep belirtilmedi';
+    if (!hedef) return interaction.reply({ content: '❌ Üye bulunamadı!', ephemeral: true });
+    await hedef.ban({ reason: sebep }).catch(() => {});
+    return interaction.reply({ content: `✅ ${hedef.user.tag} sunucudan yasaklandı! Sebep: ${sebep}`, ephemeral: true });
+  }
+
+  if (commandName === 'timeout') {
+    if (!interaction.member.permissions.has(PermissionFlagsBits.ModerateMembers)) {
+      return interaction.reply({ content: '❌ Bu komutu kullanmak için yetkin yok!', ephemeral: true });
+    }
+    const hedef = interaction.options.getMember('kullanici');
+    const sure = interaction.options.getInteger('sure');
+    if (!hedef) return interaction.reply({ content: '❌ Üye bulunamadı!', ephemeral: true });
+    await hedef.timeout(sure * 60 * 1000).catch(() => {});
+    return interaction.reply({ content: `✅ ${hedef.user.tag} adlı üyeye ${sure} dakika süre aşımı uygulandı!`, ephemeral: true });
+  }
+
+  if (commandName === 'slowmode') {
+    if (!interaction.member.permissions.has(PermissionFlagsBits.ManageChannels)) {
+      return interaction.reply({ content: '❌ Bu komutu kullanmak için yetkin yok!', ephemeral: true });
+    }
+    const saniye = interaction.options.getInteger('saniye');
+    await interaction.channel.setRateLimitPerUser(saniye).catch(() => {});
+    return interaction.reply({ content: `✅ Kanalın yavaş mod süresi ${saniye} saniye olarak ayarlandı!`, ephemeral: true });
+  }
 });
 
 // Metin (k! Öneki) Komutları
@@ -382,6 +454,39 @@ client.on('messageCreate', async (message) => {
     if (!miktar || isNaN(miktar)) return message.reply('Lütfen geçerli bir sayı gir! (`k!sil 10`)');
     await message.channel.bulkDelete(miktar + 1, true).catch(() => {});
     return message.channel.send(`✅ ${miktar} mesaj temizlendi!`).then(m => setTimeout(() => m.delete().catch(()=>{}), 3000));
+  }
+
+  if (command === 'kick') {
+    if (!message.member.permissions.has(PermissionFlagsBits.KickMembers)) return message.reply('❌ Yetkin yok!');
+    const hedef = message.mentions.members.first();
+    if (!hedef) return message.reply('Lütfen atılacak üyeyi etiketle! (`k!kick @üye`)');
+    await hedef.kick().catch(() => {});
+    return message.channel.send(`✅ ${hedef.user.tag} sunucudan atıldı!`);
+  }
+
+  if (command === 'ban') {
+    if (!message.member.permissions.has(PermissionFlagsBits.BanMembers)) return message.reply('❌ Yetkin yok!');
+    const hedef = message.mentions.members.first();
+    if (!hedef) return message.reply('Lütfen yasaklanacak üyeyi etiketle! (`k!ban @üye`)');
+    await hedef.ban().catch(() => {});
+    return message.channel.send(`✅ ${hedef.user.tag} sunucudan yasaklandı!`);
+  }
+
+  if (command === 'timeout') {
+    if (!message.member.permissions.has(PermissionFlagsBits.ModerateMembers)) return message.reply('❌ Yetkin yok!');
+    const hedef = message.mentions.members.first();
+    const sure = parseInt(args[1]);
+    if (!hedef || !sure) return message.reply('Kullanıcı ve süre belirtmelisin! (`k!timeout @üye 10`)');
+    await hedef.timeout(sure * 60 * 1000).catch(() => {});
+    return message.channel.send(`✅ ${hedef.user.tag} adlı üyeye ${sure} dakika zaman aşımı uygulandı!`);
+  }
+
+  if (command === 'slowmode') {
+    if (!message.member.permissions.has(PermissionFlagsBits.ManageChannels)) return message.reply('❌ Yetkin yok!');
+    const saniye = parseInt(args[0]);
+    if (isNaN(saniye)) return message.reply('Lütfen geçerli bir saniye gir! (`k!slowmode 5`)');
+    await message.channel.setRateLimitPerUser(saniye).catch(() => {});
+    return message.channel.send(`✅ Kanal yavaş mod süresi ${saniye} saniye yapıldı!`);
   }
 });
 
