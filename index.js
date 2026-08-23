@@ -2,162 +2,183 @@ const { Client, GatewayIntentBits, SlashCommandBuilder, PermissionFlagsBits, Emb
 const fs = require('fs');
 const http = require('http');
 
-// Render'ın botu kapatmaması (port hatası vermemesi) için kurulan hafif web sunucusu
+// Render Uptime Sunucusu
 const server = http.createServer((req, res) => {
-    res.writeHead(200, { 'Content-Type': 'text/plain' });
-    res.end('Kastuhino Bot Aktif!\n');
+  res.writeHead(200, { 'Content-Type': 'text/plain' });
+  res.end('Kastuhino Bot Aktif!\n');
 });
 server.listen(process.env.PORT || 3000);
 
+// Bot İstemcisi ve İzinler
 const client = new Client({
-    intents: [
-        GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.GuildMembers,
-        GatewayIntentBits.MessageContent
-    ]
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent,
+    GatewayIntentBits.GuildMembers,
+    GatewayIntentBits.GuildModeration
+  ]
 });
 
-// Partner Veritabanı Sistemi
+// Partner Veritabanı (partners.json)
 const PARTNER_FILE = './partners.json';
 let partners = {};
+
 if (fs.existsSync(PARTNER_FILE)) {
-    try {
-        partners = JSON.parse(fs.readFileSync(PARTNER_FILE, 'utf8'));
-    } catch (e) {
-        partners = {};
-    }
+  try {
+    partners = JSON.parse(fs.readFileSync(PARTNER_FILE, 'utf8'));
+  } catch (e) {
+    partners = {};
+  }
 }
 
 function savePartners() {
-    fs.writeFileSync(PARTNER_FILE, JSON.stringify(partners, null, 2));
+  fs.writeFileSync(PARTNER_FILE, JSON.stringify(partners, null, 2));
 }
 
+// Resimli Partner Kart Tasarımı (Embed)
+function createPartnerEmbed(guild, user, data) {
+  const guildIcon = guild ? guild.iconURL({ dynamic: true, size: 512 }) : null;
+
+  return new EmbedBuilder()
+    .setColor('#6b21ff')
+    .setAuthor({ 
+      name: user.tag, 
+      iconURL: user.displayAvatarURL({ dynamic: true }) 
+    })
+    .setThumbnail(guildIcon) // Sağ Üst: Sunucu Logosu
+    .setTitle('Partnerlik Profili')
+    .setDescription(
+      `**Bugünlük Partnerin:** ${data.bugun || 0}\n` +
+      `**Haftalık Partnerin:** ${data.hafta || 0}\n` +
+      `**Aylık Partnerin:** ${data.ay || 0}\n` +
+      `**Toplam Partnerin:** ${data.toplam || 0}\n` +
+      `**Haftalık Sıralaman:** #1`
+    )
+    .setImage('https://i.postimg.cc/bvrhKD14/70ba521c-e278-4697-9f02-33cea9a96121.jpg') // Alt: Kastuhino Afişi
+    .setTimestamp();
+}
+
+// Bot Aktif Olduğunda Slash Komutlarını Yükle
 client.once('ready', async () => {
-    console.log(`✅ ${client.user.tag} başarıyla giriş yaptı!`);
+  console.log(`[✓] ${client.user.tag} başarıyla giriş yaptı!`);
 
-    // Komutların Discord menüsünde (/) görünmesi için kayıt dizisi
-    const commands = [
-        new SlashCommandBuilder().setName('ban').setDescription('Bir kullanıcıyı sunucudan banlar.')
-            .addUserOption(option => option.setName('kullanici').setDescription('Banlanacak kullanıcı').setRequired(true))
-            .addStringOption(option => option.setName('sebep').setDescription('Ban sebebi').setRequired(false)),
-        new SlashCommandBuilder().setName('kick').setDescription('Bir kullanıcıyı sunucudan atar.')
-            .addUserOption(option => option.setName('kullanici').setDescription('Atılacak kullanıcı').setRequired(true))
-            .addStringOption(option => option.setName('sebep').setDescription('Atılma sebebi').setRequired(false)),
-        new SlashCommandBuilder().setName('temizle').setDescription('Belirtilen miktarda mesajı siler.')
-            .addIntegerOption(option => option.setName('miktar').setDescription('Silinecek mesaj sayısı').setRequired(true)),
-        new SlashCommandBuilder().setName('partner-ekle').setDescription('Partner sunucu ekler.')
-            .addStringOption(option => option.setName('sunucu-adi').setDescription('Sunucu adı').setRequired(true))
-            .addStringOption(option => option.setName('davet-linki').setDescription('Davet linki').setRequired(true)),
-        new SlashCommandBuilder().setName('partner-durum').setDescription('Mevcut partner durumunuzu gösterir.')
-    ].map(command => command.toJSON());
+  const commands = [
+    new SlashCommandBuilder()
+      .setName('partner-durum')
+      .setDescription('Partnerlik profili kartınızı gösterir.'),
+    new SlashCommandBuilder()
+      .setName('sil')
+      .setDescription('Belirtilen miktarda mesajı temizler.')
+      .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages)
+      .addIntegerOption(opt => opt.setName('miktar').setDescription('Silinecek mesaj sayısı').setRequired(true))
+  ];
 
-    try {
-        await client.application.commands.set(commands);
-        console.log('✅ Tüm eğik çizgi (/) komutları Discorda başarıyla yüklendi!');
-    } catch (error) {
-        console.error('Komut yüklenirken hata oluştu:', error);
-    }
+  try {
+    await client.application.commands.set(commands);
+    console.log('[✓] Tüm eğik çizgi (/) komutları Discorda yüklendi!');
+  } catch (err) {
+    console.error('Slash komut yükleme hatası:', err);
+  }
 });
 
-// Komut Yönetimi ve Çalıştırıcısı
-client.on('interactionCreate', async interaction => {
-    if (!interaction.isChatInputCommand()) return;
+// Slash Komut Etkileşimleri
+client.on('interactionCreate', async (interaction) => {
+  if (!interaction.isChatInputCommand()) return;
 
-    const { commandName } = interaction;
+  const { commandName } = interaction;
 
-    if (commandName === 'ban') {
-        const user = interaction.options.getUser('kullanici');
-        const reason = interaction.options.getString('sebep') || 'Sebep belirtilmedi';
-        if (!interaction.member.permissions.has(PermissionFlagsBits.BanMembers)) {
-            return interaction.reply({ content: 'Bu komutu kullanmak için yetkin yok!', ephemeral: true });
-        }
-        await interaction.guild.members.ban(user, { reason }).catch(() => {});
-        await interaction.reply(`${user.tag} başarıyla banlandı! Sebep: ${reason}`);
-    } 
-    else if (commandName === 'kick') {
-        const user = interaction.options.getUser('kullanici');
-        const reason = interaction.options.getString('sebep') || 'Sebep belirtilmedi';
-        if (!interaction.member.permissions.has(PermissionFlagsBits.KickMembers)) {
-            return interaction.reply({ content: 'Bu komutu kullanmak için yetkin yok!', ephemeral: true });
-        }
-        await interaction.guild.members.kick(user, { reason }).catch(() => {});
-        await interaction.reply(`${user.tag} başarıyla sunucudan atıldı! Sebep: ${reason}`);
+  if (commandName === 'sil') {
+    const miktar = interaction.options.getInteger('miktar');
+    await interaction.channel.bulkDelete(miktar, true).catch(() => {
+      return interaction.reply({ content: 'Mesajlar silinirken bir hata oluştu!', ephemeral: true });
+    });
+    return interaction.reply({ content: `${miktar} adet mesaj silindi!`, ephemeral: true });
+  }
+
+  if (commandName === 'partner-durum') {
+    if (!partners[interaction.user.id]) {
+      partners[interaction.user.id] = { bugun: 0, hafta: 0, ay: 0, toplam: 0 };
     }
-    else if (commandName === 'temizle') {
-        const miktar = interaction.options.getInteger('miktar');
-        if (!interaction.member.permissions.has(PermissionFlagsBits.ManageMessages)) {
-            return interaction.reply({ content: 'Bu komutu kullanmak için yetkin yok!', ephemeral: true });
-        }
-        await interaction.channel.bulkDelete(miktar, true).catch(() => {
-            return interaction.reply({ content: 'Mesajlar silinirken bir hata oluştu!', ephemeral: true });
-        });
-        await interaction.reply({ content: `${miktar} adet mesaj silindi!`, ephemeral: true });
-    }
-    else if (commandName === 'partner-ekle') {
-        const sunucuAdi = interaction.options.getString('sunucu-adi');
-        const davetLinki = interaction.options.getString('davet-linki');
-        partners[interaction.user.id] = { sunucuAdi, davetLinki, tarih: new Date().toLocaleDateString() };
-        savePartners();
-        await interaction.reply(`"${sunucuAdi}" adlı partner başarıyla eklendi!`);
-    }
-    else if (commandName === 'partner-durum') {
-        const kayit = partners[interaction.user.id];
-        if (!kayit) {
-            return interaction.reply({ content: 'Kayıtlı bir partnerliğiniz bulunmuyor.', ephemeral: true });
-        }
-        await interaction.reply(`Partner Sunucunuz: ${kayit.sunucuAdi}\nLink: ${kayit.davetLinki}`);
-    }
+    const embed = createPartnerEmbed(interaction.guild, interaction.user, partners[interaction.user.id]);
+    return interaction.reply({ embeds: [embed] });
+  }
 });
-// Prefix (k!) Gelişmiş Partner ve Embed Sistemi
+
+// Prefix Komutları (k!) ve Otomatik Partner Algılama
 client.on('messageCreate', async (message) => {
-  if (message.author.bot || !message.content.startsWith('k!')) return;
+  if (message.author.bot || !message.guild) return;
 
-  const args = message.content.slice(2).trim().split(/ +/);
-  const command = args.shift().toLowerCase();
-
-  // Her kullanıcının sayaç verisini kontrol et, yoksa sıfırdan oluştur
   if (!partners[message.author.id]) {
     partners[message.author.id] = { bugun: 0, hafta: 0, ay: 0, toplam: 0 };
   }
 
-  // Kullanım: k!partner-ekle
-  if (command === 'partner-ekle') {
-    // Sayıları 1 artır
+  // 1. OTOMATİK PARTNER ALGILAMA (discord.gg linki görünce)
+  if (message.content.includes('discord.gg/') || message.content.includes('discord.com/invite/')) {
     partners[message.author.id].bugun += 1;
     partners[message.author.id].hafta += 1;
     partners[message.author.id].ay += 1;
     partners[message.author.id].toplam += 1;
     savePartners();
 
-    return message.reply(`✅ Bir partner daha eklendi! Toplam partner sayın: **${partners[message.author.id].toplam}**`);
+    const embed = createPartnerEmbed(message.guild, message.author, partners[message.author.id]);
+    return message.reply({ content: '✅ Partnerlik başarıyla sayıldı!', embeds: [embed] });
   }
 
-  // Kullanım: k!partner-durum
-  if (command === 'partner-durum') {
-    const kayit = partners[message.author.id];
+  // 2. k!sustur Komutu
+  if (message.content.startsWith('k!sustur')) {
+    if (!message.member.permissions.has(PermissionFlagsBits.ModerateMembers)) {
+      return message.reply('Komut çalıştırılırken bir Discord izin hatası oluştu.');
+    }
+    const target = message.mentions.members.first();
+    if (!target) return message.reply('Lütfen susturulacak üyeyi etiketleyin!');
 
-    // Fotoğraftaki görünümü oluşturan Embed tasarımı
-    const durumEmbed = new EmbedBuilder()
-      .setColor('#6b21ff') // Sol kenardaki mor şerit
-      .setAuthor({ 
-        name: message.author.tag, 
-        iconURL: message.author.displayAvatarURL({ dynamic: true }) 
-      })
-      .setTitle('Partnerlik Profili')
-      .setDescription(
-        `**Bugünlük Partnerin:** ${kayit.bugun}\n` +
-        `**Haftalık Partnerin:** ${kayit.hafta}\n` +
-        `**Aylık Partnerin:** ${kayit.ay}\n` +
-        `**Toplam Partnerin:** ${kayit.toplam}\n` +
-        `**Haftalık Sıralaman:** #1`
-      )
-      // Fotoğraftaki alt afiş kısmı (Kendi resminin linkini buraya koyabilirsin)
-     .setImage('https://i.postimg.cc/bvrhKD14/70ba521c-e278-4697-9f02-33cea9a96121.jpg')
-      .setTimestamp();
+    try {
+      await target.timeout(10 * 60 * 1000, 'k!sustur komutu');
+      return message.reply(`✅ **${target.user.tag}** 10 dakika boyunca susturuldu.`);
+    } catch (err) {
+      return message.reply('Komut çalıştırılırken bir Discord izin hatası oluştu.');
+    }
+  }
 
-    return message.reply({ embeds: [durumEmbed] });
+  // 3. k!kick Komutu
+  if (message.content.startsWith('k!kick')) {
+    if (!message.member.permissions.has(PermissionFlagsBits.KickMembers)) {
+      return message.reply('Komut çalıştırılırken bir Discord izin hatası oluştu.');
+    }
+    const target = message.mentions.members.first();
+    if (!target) return message.reply('Lütfen sunucudan atılacak üyeyi etiketleyin!');
+
+    try {
+      await target.kick('k!kick komutu');
+      return message.reply(`✅ **${target.user.tag}** sunucudan atıldı.`);
+    } catch (err) {
+      return message.reply('Komut çalıştırılırken bir Discord izin hatası oluştu.');
+    }
+  }
+
+  // 4. k!ban Komutu
+  if (message.content.startsWith('k!ban')) {
+    if (!message.member.permissions.has(PermissionFlagsBits.BanMembers)) {
+      return message.reply('Komut çalıştırılırken bir Discord izin hatası oluştu.');
+    }
+    const target = message.mentions.members.first();
+    if (!target) return message.reply('Lütfen yasaklanacak üyeyi etiketleyin!');
+
+    try {
+      await target.ban({ reason: 'k!ban komutu' });
+      return message.reply(`✅ **${target.user.tag}** sunucudan yasaklandı.`);
+    } catch (err) {
+      return message.reply('Komut çalıştırılırken bir Discord izin hatası oluştu.');
+    }
+  }
+
+  // 5. k!partner-durum Komutu
+  if (message.content.trim() === 'k!partner-durum') {
+    const embed = createPartnerEmbed(message.guild, message.author, partners[message.author.id]);
+    return message.reply({ embeds: [embed] });
   }
 });
-// Bot Giriş İşlemi
+
+// Bot Girişi
 client.login(process.env.DISCORD_TOKEN);
