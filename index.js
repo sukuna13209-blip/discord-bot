@@ -98,6 +98,8 @@ client.once('ready', async () => {
   const commands = [
     new SlashCommandBuilder().setName('yardim').setDescription('Açılır menülü detaylı yardım menüsünü açar.'),
     new SlashCommandBuilder().setName('partner-durum').setDescription('Partnerlik istatistiklerinizi gösterir.'),
+    new SlashCommandBuilder().setName('anime-oner').setDescription('Rastgele kaliteli bir anime önerir.'),
+    new SlashCommandBuilder().setName('waifu-puanla').setDescription('Waifu skorunuzu hesaplar!'),
     new SlashCommandBuilder()
       .setName('sil')
       .setDescription('Belirtilen miktarda mesaj siler.')
@@ -142,7 +144,7 @@ client.on('interactionCreate', async (interaction) => {
            .setDescription('İster `k!` isterseniz `/` ön ekiyle kullanabilirsiniz:\n\n`/ban` • Kullanıcıyı yasaklar\n`/kick` • Kullanıcıyı atar\n`/sil` • Toplu mesaj siler');
     } else if (secim === 'eglence') {
       embed.setTitle('🎉 Eğlence Komutları')
-           .setDescription('İster `k!` isterseniz `/` ön ekiyle kullanabilirsiniz:\n\n`/saril` • Sarılma GIFi\n`/tokat` • Tokat atma GIFi\n`k!anime-oner` • Kaliteli anime önerir\n`k!gacha` • Günlük karakter düşür');
+           .setDescription('İster `k!` isterseniz `/` ön ekiyle kullanabilirsiniz:\n\n`/saril` • Sarılma GIFi\n`/tokat` • Tokat atma GIFi\n`/anime-oner` • Kaliteli anime önerir\n`/waifu-puanla` • Waifu skoru hesaplar');
     } else if (secim === 'bilgi') {
       embed.setTitle('📚 Bilgi Komutları')
            .setDescription('İster `k!` isterseniz `/` ön ekiyle kullanabilirsiniz:\n\n`/yardim` • Bu yardım menüsü\n`/partner-durum` • Partner istatistikleri');
@@ -175,6 +177,16 @@ client.on('interactionCreate', async (interaction) => {
   if (commandName === 'tokat') {
     const hedef = interaction.options.getUser('kullanici');
     return interaction.reply({ embeds: [new EmbedBuilder().setColor('#ff5555').setDescription(`🖐️ <@${interaction.user.id}>, <@${hedef.id}> kişisini tokatladı!`).setImage(GIFS.tokat)] });
+  }
+
+  if (commandName === 'anime-oner') {
+    const secilen = ANIME_LISTESI[Math.floor(Math.random() * ANIME_LISTESI.length)];
+    return interaction.reply({ embeds: [new EmbedBuilder().setColor('#ff79c6').setTitle(`📺 ${secilen.isim}`).addFields({ name: 'Tür', value: secilen.tur }, { name: 'Özet', value: secilen.desc })] });
+  }
+
+  if (commandName === 'waifu-puanla') {
+    const rastgelePuan = Math.floor(Math.random() * 51) + 50; // 50 ile 100 arası
+    return interaction.reply({ embeds: [new EmbedBuilder().setColor('#ff79c6').setTitle('💖 Waifu / Husbando Puanlama').setDescription(`<@${interaction.user.id}> için yapılan analiz sonucunda puanın: **%${rastgelePuan}** ✨`] });
   }
 
   if (commandName === 'sil') {
