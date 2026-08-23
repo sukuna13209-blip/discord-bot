@@ -105,6 +105,21 @@ function getYardimMenu() {
   );
 }
 
+// Ana Yardım Menüsü İçeriği (Örnek görsele göre tasarlandı)
+function getAnaSayfaEmbed(username) {
+  return new EmbedBuilder()
+    .setColor('#6b21ff')
+    .setTitle('🛡️ Kastuhino Bot — Kapsamlı Yardım & Kontrol Paneli')
+    .setDescription(`Merhaba **${username}**, Kastuhino Bot komut rehberine hoş geldin.\n\n` +
+                    `🔹 **Bot Ön Eki (Prefix):** \`k!\` veya \`/\`\n\n` +
+                    `Aşağıdaki açılış menüsünü kullanarak kategoriler arasında geçiş yapabilirsiniz.\n\n` +
+                    `📁 **Kategoriler:**\n` +
+                    `• 🛡️ **Moderasyon:** Ban, mute, rol, uyarı ve mesaj temizleme sistemi\n` +
+                    `• 🎉 **Eğlence ve Oyunlar:** Anime tahmin, karakter bulmaca, gacha, sarıl ve tokat komutları\n` +
+                    `• 📚 **Bilgi ve Sistemler:** Yardım paneli ve partner istatistik sistemleri`)
+    .setTimestamp();
+}
+
 client.once('ready', async () => {
   console.log(`[✓] ${client.user.tag} aktif ve komutlar yüklendi!`);
   client.user.setActivity('Kastuhino // Anime & Manga', { type: 3 });
@@ -160,19 +175,27 @@ client.on('interactionCreate', async (interaction) => {
     if (secim === 'mod') {
       embed.setTitle('🛡️ Moderasyon Komutları Listesi')
            .setDescription('İster `k!` isterseniz `/` ön ekiyle kullanabilirsiniz:\n\n' +
-                           '🔸 **k!sil <sayı>** veya **/sil**\n' +
+                           '🔸 **k!sil &lt;sayı&gt;** veya **/sil**\n' +
                            '└ *Belirtilen miktarda sohbet mesajını hızlıca temizler.*');
     } else if (secim === 'eglence') {
       embed.setTitle('🎉 Eğlence ve Oyun Komutları Listesi')
            .setDescription('İster `k!` isterseniz `/` ön ekiyle kullanabilirsiniz:\n\n' +
-                           '🎮 **k!anime-tahmin** / **/anime-tahmin**\n└ *İpuçlarından yola çıkarak doğru animeyi ilk bilen kazanır.*\n\n' +
-                           '👑 **k!karakter-tahmin** / **/karakter-tahmin**\n└ *Açıklanan anime karakterini tahmin etme oyunu.*\n\n' +
-                           '📺 **k!anime-oner** / **/anime-oner**\n└ *İzlemen için rastgele kaliteli bir anime önerir.*\n\n' +
-                           '💬 **k!anime-soz** / **/anime-soz**\n└ *Efsaneleşmiş rastgele anime sözleri atar.*\n\n' +
-                           '📦 **k!gacha** / **/gacha**\n└ *Şansına kutudan rastgele anime karakteri düşürür.*\n\n' +
-                           '💖 **k!waifu-puanla** / **/waifu-puanla**\n└ *Waifu veya husbando skorunuzu hesaplar.*\n\n' +
-                           '🤗 **k!saril @üye** / **/saril**\n└ *Etiketlediğin kişiye sıcak bir sarılma GIFi yollar.*\n\n' +
-                           '🖐️ **k!tokat @üye** / **/tokat**\n└ *Etiketlediğin kişiye eğlenceli bir tokat atma GIFi yollar.*');
+                           '🎮 **k!anime-tahmin** / **/anime-tahmin**\n' +
+                           '└ *İpuçlarından yola çıkarak doğru animeyi ilk bilen kazanır.*\n\n' +
+                           '👑 **k!karakter-tahmin** / **/karakter-tahmin**\n' +
+                           '└ *Açıklanan anime karakterini tahmin etme oyunu.*\n\n' +
+                           '🟦 **k!anime-oner** / **/anime-oner**\n' +
+                           '└ *İzlemen için rastgele kaliteli bir anime önerir.*\n\n' +
+                           '💬 **k!anime-soz** / **/anime-soz**\n' +
+                           '└ *Efsaneleşmiş rastgele anime sözleri atar.*\n\n' +
+                           '📦 **k!gacha** / **/gacha**\n' +
+                           '└ *Şansına kutudan rastgele anime karakteri düşürür.*\n\n' +
+                           '💖 **k!waifu-puanla** / **/waifu-puanla**\n' +
+                           '└ *Waifu veya husbando skorunuzu hesaplar.*\n\n' +
+                           '🤗 **k!saril @üye** / **/saril**\n' +
+                           '└ *Etiketlediğin kişiye sıcak bir sarılma GIFi yollar.*\n\n' +
+                           '🖐️ **k!tokat @üye** / **/tokat**\n' +
+                           '└ *Etiketlediğin kişiye eğlenceli bir tokat atma GIFi yollar.*');
     } else if (secim === 'bilgi') {
       embed.setTitle('📚 Bilgi ve Sistem Komutları Listesi')
            .setDescription('İster `k!` isterseniz `/` ön ekiyle kullanabilirsiniz:\n\n' +
@@ -189,11 +212,7 @@ client.on('interactionCreate', async (interaction) => {
   const { commandName } = interaction;
 
   if (commandName === 'yardim') {
-    const embed = new EmbedBuilder()
-      .setColor('#6b21ff')
-      .setTitle('✨ Kastuhino Komut Merkezi')
-      .setDescription('İster `k!` isterseniz `/` ön ekiyle kullanabilirsiniz:\nAşağıdaki açılır menüden kategori seçerek tüm komutları detaylıca inceleyebilirsin.');
-    return interaction.reply({ embeds: [embed], components: [getYardimMenu()] });
+    return interaction.reply({ embeds: [getAnaSayfaEmbed(interaction.user.username)], components: [getYardimMenu()] });
   }
 
   if (commandName === 'partner-durum') {
@@ -289,11 +308,7 @@ client.on('messageCreate', async (message) => {
   const command = args.shift().toLowerCase();
 
   if (command === 'yardim' || command === 'yardım') {
-    const embed = new EmbedBuilder()
-      .setColor('#6b21ff')
-      .setTitle('✨ Kastuhino Komut Merkezi')
-      .setDescription('İster `k!` isterseniz `/` ön ekiyle kullanabilirsiniz:\nAşağıdaki açılır menüden kategori seçerek tüm komutları detaylıca inceleyebilirsin.');
-    return message.reply({ embeds: [embed], components: [getYardimMenu()] });
+    return message.reply({ embeds: [getAnaSayfaEmbed(message.author.username)], components: [getYardimMenu()] });
   }
 
   if (command === 'partner-durum') {
