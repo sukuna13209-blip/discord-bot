@@ -1,1 +1,62 @@
-
+[
+  {
+    "id": "sukuna_01",
+    "isim": "Ryomen Sukuna - The King of Curses",
+    "sinif": "Efsanevi",
+    "gorsel_link": "https://i.postimg.cc/mhx8xYSx/sukuna-kart.png"
+  },
+  {
+    "id": "toshiro_01",
+    "isim": "Toshiro Hitsugaya",
+    "sinif": "Nadir",
+    "gorsel_link": "https://i.postimg.cc/Y9h5MxQ1/toshiro-hitgusya.png"
+  },
+  {
+    "id": "gojo_01",
+    "isim": "Satoru Gojo",
+    "sinif": "Efsanevi",
+    "gorsel_link": "https://i.postimg.cc/Pfvg72tV/gojo-kart.png"
+  },
+  {
+    "id": "naruto_01",
+    "isim": "Uzumaki Naruto",
+    "sinif": "Nadir",
+    "gorsel_link": "https://i.postimg.cc/L6zr95gb/naruto-kart.png"
+  },
+  {
+    "id": "luffy_01",
+    "isim": "Monkey D. Luffy",
+    "sinif": "Gizemli",
+    "gorsel_link": "https://i.postimg.cc/3R4cPxHX/Luffy-kart.png"
+  },
+  {
+    "id": "minato_01",
+    "isim": "Namikaze Minato",
+    "sinif": "Efsanevi",
+    "gorsel_link": "https://i.postimg.cc/d3c4pRB4/Minato.png"
+  },
+  {
+    "id": "itachi_01",
+    "isim": "Uchiha Itachi",
+    "sinif": "Collector Rare (CR)",
+    "gorsel_link": "https://i.postimg.cc/vZZXJZrm/itachi-kart.png"
+  },
+  {
+    "id": "ace_01",
+    "isim": "Portgas D. Ace",
+    "sinif": "Özel (SR)",
+    "gorsel_link": "https://i.postimg.cc/8kdHs6wS/ace.png"
+  },
+  {
+    "id": "zoro_01",
+    "isim": "Roronoa Zoro",
+    "sinif": "Nadir (UC)",
+    "gorsel_link": "https://i.postimg.cc/vZK7CL83/zoro.png"
+  },
+  {
+    "id": "pain_01",
+    "isim": "Pain (Deva Path)",
+    "sinif": "Efsanevi",
+    "gorsel_link": "https://i.postimg.cc/5yf88spJ/pain.png"
+  }
+]
