@@ -16,7 +16,7 @@ try { kartlar = JSON.parse(fs.readFileSync('./kartlar.json', 'utf8')); } catch (
 let partnerler = [];
 try { partnerler = JSON.parse(fs.readFileSync('./partners.json', 'utf8')); } catch (e) { console.log("partners.json okunamadı!"); }
 
-// Anime Sözleri ve Önerileri
+// Anime Sözleri, Önerileri ve Oyun Veritabanı
 const animeSozleri = [
     "“İnsanlar ancak acı çektiklerinde gerçekten değişebilirler.” - Kaneki Ken",
     "“Geleceğini değiştirmek istiyorsan, zayıflığından kurtul.” - Roronoa Zoro",
@@ -31,14 +31,30 @@ const animeOnerileri = [
     "**Mob Psycho 100** - Hem aksiyonlu hem de çok eğlenceli bir anime."
 ];
 
+const animeTahminleri = [
+    { ipucu: "Kahverengi saçlı, deftere yazdığı kişileri öldüren bir dahi.", cevap: "Death Note" },
+    { ipucu: "İnsanları yiyen devlerin olduğu duvarlarla çevrili bir dünya.", cevap: "Attack on Titan" },
+    { ipucu: "Korsanlar Kralı olmak isteyen, uzayan kollarıyla bilinen çocuk.", cevap: "One Piece" },
+    { ipucu: "Lanetli parmakları yiyen pembe saçlı bir büyücü adayı.", cevap: "Jujutsu Kaisen" }
+];
+
+const karakterTahminleri = [
+    { ipucu: "Sol gözünde göz bağı olan, sonsuzluk gücüne sahip en güçlü büyücü.", cevap: "Satoru Gojo" },
+    { ipucu: "Üç kılıç stili kullanan, yeşil saçlı korsan avcısı.", cevap: "Roronoa Zoro" },
+    { ipucu: "Yedi kocalı hürmüz gibi sharinganı olan, Konoha'nın katliamcısının kardeşi.", cevap: "Uchiha Sasuke" }
+];
+
 // Slash Komutlarını Tanımlıyoruz
 const commands = [
     new SlashCommandBuilder().setName('yardim').setDescription('Kastuhino Bot açılır menülü yardım panelini açar.'),
     new SlashCommandBuilder().setName('gacha').setDescription('Şansına kutudan rastgele anime karakteri düşürür.'),
     new SlashCommandBuilder().setName('kart-cek').setDescription('Kastuhino Setiinden rastgele kart çeker.'),
+    new SlashCommandBuilder().setName('kart-bilgi').setDescription('Veritabanındaki tüm kartları ve sınıflarını listeler.'),
     new SlashCommandBuilder().setName('partner').setDescription('Değerli partner sunucularımızı gösterir.'),
     new SlashCommandBuilder().setName('anime-soz').setDescription('Efsaneleşmiş rastgele anime sözleri atar.'),
     new SlashCommandBuilder().setName('anime-oner').setDescription('İzlemen için rastgele kaliteli bir anime önerir.'),
+    new SlashCommandBuilder().setName('anime-tahmin').setDescription('İpuçlarından yola çıkarak doğru animeyi bilme oyunu.'),
+    new SlashCommandBuilder().setName('karakter-tahmin').setDescription('Açıklanan anime karakterini tahmin etme oyunu.'),
     new SlashCommandBuilder().setName('waifu-puanla').setDescription('Waifu veya husbando skorunuzu hesaplar.'),
     new SlashCommandBuilder().setName('saril').setDescription('Etiketlediğin kişiye sıcak bir sarılma yollar.').addUserOption(o => o.setName('uye').setDescription('Sarılmak istediğin üye').setRequired(true)),
     new SlashCommandBuilder().setName('tokat').setDescription('Etiketlediğin kişiye eğlenceli bir tokat atar.').addUserOption(o => o.setName('uye').setDescription('Tokat atmak istediğin üye').setRequired(true))
@@ -97,6 +113,15 @@ function komutIsle(isim, user, hedefUye = null) {
         return { embeds: [embed] };
     }
 
+    if (isim === 'kart-bilgi') {
+        if (kartlar.length === 0) return { content: "Veritabanında kayıtlı kart bulunmuyor!" };
+        embed.setColor('#F1C40F').setTitle('🃏 Kastuhino | Kart Koleksiyonu Veritabanı').setDescription('Sistemde kayıtlı olan tüm kartlar ve sınıfları:');
+        kartlar.forEach((k, index) => {
+            embed.addFields({ name: `${index + 1}. ${k.isim}`, value: `**Sınıfı:** ${k.sinif} \n[Görseli Gör](${k.gorsel_link})`, inline: false });
+        });
+        return { embeds: [embed] };
+    }
+
     if (isim === 'partner') {
         if (partnerler.length === 0) return { content: "Şu an kayıtlı bir partner sunucu bulunmuyor." };
         embed.setColor('#2ECC71').setTitle('🤝 Kastuhino | Partner Sunucular').setDescription('Sunucumuzun değerli partnerleri:');
@@ -113,6 +138,18 @@ function komutIsle(isim, user, hedefUye = null) {
     if (isim === 'anime-oner') {
         const onerilen = animeOnerileri[Math.floor(Math.random() * animeOnerileri.length)];
         embed.setColor('#9B59B6').setTitle('📺 Anime Önerisi').setDescription(onerilen);
+        return { embeds: [embed] };
+    }
+
+    if (isim === 'anime-tahmin') {
+        const oyun = animeTahminleri[Math.floor(Math.random() * animeTahminleri.length)];
+        embed.setColor('#1ABC9C').setTitle('🎮 Anime Tahmin Oyunu').setDescription(`**İpucu:** ${oyun.ipucu}\n\n*Bu anime hangisi? (Cevap: ||${oyun.cevap}||)*`);
+        return { embeds: [embed] };
+    }
+
+    if (isim === 'karakter-tahmin') {
+        const oyun = karakterTahminleri[Math.floor(Math.random() * karakterTahminleri.length)];
+        embed.setColor('#E74C3C').setTitle('👑 Karakter Tahmin Oyunu').setDescription(`**Açıklama:** ${oyun.ipucu}\n\n*Bu karakter kim? (Cevap: ||${oyun.cevap}||)*`);
         return { embeds: [embed] };
     }
 
@@ -144,9 +181,9 @@ client.on('interactionCreate', async interaction => {
         if (secim === 'mod_menu') {
             resEmbed.setTitle('🛡️ Moderatörlük Komutları').setDescription('• `k!ban / /ban` - Üyeyi sunucudan yasaklar\n• `k!kick / /kick` - Üyeyi sunucudan atar\n• `k!mute / /mute` - Üyeyi susturur\n• `k!temizle / /temizle` - Belirtilen miktarda mesajı siler');
         } else if (secim === 'eglence_menu') {
-            resEmbed.setTitle('🎉 Eğlence ve Oyun Komutları').setDescription('• `k!gacha / /gacha` - Şansına kutudan kart düşürür\n• `k!kart çek` - Kastuhino seti kartı çeker\n• `k!anime-soz / /anime-soz` - Rastgele anime sözü atar\n• `k!saril / /saril` - İstediğin kişiye sarılır');
+            resEmbed.setTitle('🎉 Eğlence ve Oyun Komutları').setDescription('• `k!anime-tahmin / /anime-tahmin` - İpuçlarından doğru animeyi bilme\n• `k!karakter-tahmin / /karakter-tahmin` - Anime karakterini tahmin etme\n• `k!gacha / /gacha` - Şansına kutudan kart düşürür\n• `k!kart çek` - Kastuhino seti kartı çeker\n• `k!anime-soz / /anime-soz` - Rastgele anime sözü atar\n• `k!saril / /saril` - İstediğin kişiye sarılır');
         } else if (secim === 'bilgi_menu') {
-            resEmbed.setTitle('📚 Bilgi ve Sistem Komutları').setDescription('• `k!partner / /partner` - Partner sunucuları listeler\n• `k!yardim / /yardim` - Yardım menüsünü açar');
+            resEmbed.setTitle('📚 Bilgi ve Sistem Komutları').setDescription('• `k!kart-bilgi / /kart-bilgi` - Tüm kartları ve sınıflarını listeler\n• `k!partner / /partner` - Partner sunucuları listeler\n• `k!yardim / /yardim` - Yardım menüsünü açar');
         }
 
         return interaction.update({ embeds: [resEmbed], components: interaction.message.components });
@@ -173,7 +210,12 @@ client.on('messageCreate', async message => {
 
     let mappedName = komutAdi;
     if (komutAdi === 'kart' && ikinciKelime === 'çek') mappedName = 'kart-cek';
-    if (komutAdi === 'yardim') mappedName = 'yardim';
+    if (komutAdi === 'kart' && ikinciKelime === 'bilgi') mappedName = 'kart-bilgi';
+    if (komutAdi === 'anime' && ikinciKelime === 'tahmin') mappedName = 'anime-tahmin';
+    if (komutAdi === 'karakter' && ikinciKelime === 'tahmin') mappedName = 'karakter-tahmin';
+    if (komutAdi === 'anime' && ikinciKelime === 'soz') mappedName = 'anime-soz';
+    if (komutAdi === 'anime' && ikinciKelime === 'oner') mappedName = 'anime-oner';
+    if (komutAdi === 'waifu' && ikinciKelime === 'puanla') mappedName = 'waifu-puanla';
 
     const sonuc = komutIsle(mappedName, message.author, hedefUye);
     if (sonuc) {
