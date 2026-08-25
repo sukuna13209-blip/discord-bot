@@ -63,15 +63,14 @@ function haftalikSiralamaBul(userId) {
 }
 
 // --- GÖRSELDEKİ BİREBİR PARTNER EMBED TASARIMI ---
-function createPartnerEmbed(user, data) {
+function createPartnerEmbed(user, data, guild) {
     const siralama = haftalikSiralamaBul(user.id);
-    return new EmbedBuilder()
+    const embed = new EmbedBuilder()
         .setColor('#6b21ff')
         .setAuthor({ 
             name: user.tag, 
             iconURL: user.displayAvatarURL({ dynamic: true }) 
         })
-        .setThumbnail(user.displayAvatarURL({ dynamic: true, size: 512 })) 
         .setTitle('Partnerlik Profili')
         .setDescription(
             `**Bugünlük Partnerin:** ${data.bugun || 0}\n` +
@@ -80,8 +79,15 @@ function createPartnerEmbed(user, data) {
             `**Toplam Partnerin:** ${data.toplam || 0}\n` +
             `**Haftalık Sıralaman:** #${siralama}`
         )
-        .setImage('https://i.postimg.cc/PqJ78dP6/c84c6583-884f-46c2-ba81-933db6aaeff8.png') // İstediğin Sınırsız Büyük Afiş Linki
+        .setImage('https://i.postimg.cc/PqJ78dP6/c84c6583-884f-46c2-ba81-933db6aaeff8.png') // Sınırsız Büyük Afiş Linki
         .setTimestamp();
+
+    // Sağ üstteki küçük resim (Sunucu Logosu / PP'si)
+    if (guild && guild.iconURL()) {
+        embed.setThumbnail(guild.iconURL({ dynamic: true, size: 512 }));
+    }
+
+    return embed;
 }
 
 // --- DENGELİ KART SEÇİMİ & MARKET ---
@@ -173,7 +179,7 @@ client.once('ready', async () => {
 });
 
 // --- KOMUT MERKEZİ ---
-function komutIsle(isim, user, args = []) {
+function komutIsle(isim, user, args = [], guild = null) {
     const embed = new EmbedBuilder().setTimestamp();
     const userProfil = profilGetir(user.id);
 
@@ -247,7 +253,7 @@ function komutIsle(isim, user, args = []) {
     }
 
     if (isim === 'partner-durum') {
-        return { embeds: [createPartnerEmbed(user, partners[user.id])] };
+        return { embeds: [createPartnerEmbed(user, partners[user.id], guild)] };
     }
 }
 
@@ -289,7 +295,7 @@ client.on('interactionCreate', async interaction => {
     let arg = null;
     if (commandName === 'kart-al') arg = interaction.options.getInteger('no');
 
-    const sonuc = komutIsle(commandName, interaction.user, [arg]);
+    const sonuc = komutIsle(commandName, interaction.user, [arg], interaction.guild);
     if (sonuc) await interaction.reply(sonuc);
 });
 
@@ -311,7 +317,7 @@ client.on('messageCreate', async message => {
             partners[message.author.id].toplam += 1;
             savePartners();
 
-            const embed = createPartnerEmbed(message.author, partners[message.author.id]);
+            const embed = createPartnerEmbed(message.author, partners[message.author.id], message.guild);
             return message.reply({ content: '✅ Partnerlik sayıldı!', embeds: [embed] });
         }
     }
@@ -361,7 +367,7 @@ client.on('messageCreate', async message => {
     if (cmd === 'kart' && arg1 === 'bilgi') islenen = 'kart-bilgi';
     if (cmd === 'partner' && arg1 === 'durum') islenen = 'partner-durum';
 
-    const sonuc = komutIsle(islenen, message.author, [arg1]);
+    const sonuc = komutIsle(islenen, message.author, [arg1], message.guild);
     if (sonuc) await message.reply(sonuc);
 });
 
