@@ -2,15 +2,15 @@ const { Client, GatewayIntentBits, EmbedBuilder, ActionRowBuilder, StringSelectM
 const fs = require('fs');
 const http = require('http');
 
-// Render Uptime Sunucusu
+// --- RENDER UPTIME SUNUCUSU ---
 const server = http.createServer((req, res) => {
     res.writeHead(200, { 'Content-Type': 'text/plain' });
-    res.end('Kastuhino Bot Aktif!\n');
+    res.end('Kastuhino Bot Aktif ve Çalışıyor!\n');
 });
 server.listen(process.env.PORT || 3000);
 
-// Otomatik partner algılamanın çalışacağı ÖZEL KANAL ID'Sİ
-const PARTNER_KANAL_ID = '1514756158831988876';
+// --- SABİT AYARLAR ---
+const PARTNER_KANAL_ID = '1514756158831988876'; // Otomatik partner algılama kanalı
 
 const client = new Client({
     intents: [
@@ -22,11 +22,11 @@ const client = new Client({
     ]
 });
 
-// --- VERİTABANI YÖNETİMİ ---
-let kartlar = [];
-try { kartlar = JSON.parse(fs.readFileSync('./kartlar.json', 'utf8')); } catch (e) { console.log("⚠️ kartlar.json okunamadı!"); }
-
+// --- GÜVENLİ VERİTABANI YÖNETİMİ ---
 const PARTNER_FILE = './partners.json';
+const EKONOMI_FILE = './ekonomi.json';
+const KARTLAR_FILE = './kartlar.json';
+
 let partners = {};
 if (fs.existsSync(PARTNER_FILE)) {
     try { partners = JSON.parse(fs.readFileSync(PARTNER_FILE, 'utf8')); } catch (e) { partners = {}; }
@@ -36,9 +36,11 @@ function savePartners() {
 }
 
 let ekonomi = {};
-try { ekonomi = JSON.parse(fs.readFileSync('./ekonomi.json', 'utf8')); } catch (e) { ekonomi = {}; }
+if (fs.existsSync(EKONOMI_FILE)) {
+    try { ekonomi = JSON.parse(fs.readFileSync(EKONOMI_FILE, 'utf8')); } catch (e) { ekonomi = {}; }
+}
 function ekonomiKaydet() {
-    fs.writeFileSync('./ekonomi.json', JSON.stringify(ekonomi, null, 2));
+    fs.writeFileSync(EKONOMI_FILE, JSON.stringify(ekonomi, null, 2));
 }
 function profilGetir(userId) {
     if (!ekonomi[userId]) {
@@ -47,7 +49,12 @@ function profilGetir(userId) {
     return ekonomi[userId];
 }
 
-// --- PARTNER RESİMLİ EMBED TASARIMI ---
+let kartlar = [];
+if (fs.existsSync(KARTLAR_FILE)) {
+    try { kartlar = JSON.parse(fs.readFileSync(KARTLAR_FILE, 'utf8')); } catch (e) { kartlar = []; }
+}
+
+// --- PROFESYONEL PARTNER RESİMLİ EMBED TASARIMI ---
 function createPartnerEmbed(guild, user, data) {
     const guildIcon = guild ? guild.iconURL({ dynamic: true, size: 512 }) : null;
     return new EmbedBuilder()
@@ -56,7 +63,7 @@ function createPartnerEmbed(guild, user, data) {
             name: user.tag, 
             iconURL: user.displayAvatarURL({ dynamic: true }) 
         })
-        .setThumbnail(guildIcon) 
+        .setThumbnail(guildIcon) // Sağ Üst: Sunucu Logosu
         .setTitle('Partnerlik Profili')
         .setDescription(
             `**Bugünlük Partnerin:** ${data.bugun || 0}\n` +
@@ -65,7 +72,7 @@ function createPartnerEmbed(guild, user, data) {
             `**Toplam Partnerin:** ${data.toplam || 0}\n` +
             `**Haftalık Sıralaman:** #1`
         )
-        .setImage('https://i.postimg.cc/bvrhKD14/70ba521c-e278-4697-9f02-33cea9a96121.jpg') 
+        .setImage('https://i.postimg.cc/bvrhKD14/70ba521c-e278-4697-9f02-33cea9a96121.jpg') // Alt: Büyük Afiş
         .setTimestamp();
 }
 
@@ -102,50 +109,50 @@ function marketiYenile() {
 setInterval(marketiYenile, 3 * 60 * 60 * 1000);
 marketiYenile();
 
-// --- YARDIM MENÜSÜ ---
+// --- GELİŞMİŞ YARDIM MENÜSÜ TASARIMI ---
 function yardimMenusuOlustur() {
     const embed = new EmbedBuilder()
         .setColor('#2F3136')
-        .setTitle('🛡️ Kastuhino Bot — Kapsamlı Yardım & Kontrol Paneli')
-        .setDescription('Kastuhino Bot komut rehberine hoş geldin.\n\n🔹 **Ön Ek:** `k!` veya `/`');
+        .setTitle('🛡️ Kastuhino Bot — Profesyonel Kontrol Paneli')
+        .setDescription('Kastuhino Bot komut rehberine hoş geldin.\n\n🔹 **Prefix (Ön Ek):** `k!` veya `/`\n🔹 **Özellikler:** Otomatik Partner Sayacı, Anime Kart Koleksiyonu, Gelişmiş Ekonomi ve Moderasyon.\n\nAşağıdaki menüden dilediğin kategoriyi seçebilirsin.');
 
     const row = new ActionRowBuilder().addComponents(
         new StringSelectMenuBuilder()
             .setCustomId('yardim_menu')
-            .setPlaceholder('Menüden bir kategori seç...')
+            .setPlaceholder('📂 Bir kategori seçin...')
             .addOptions([
-                { label: 'Moderatörlük Komutları', description: 'Sunucu yönetim araçları', value: 'mod_menu', emoji: '🛡️' },
-                { label: 'Ekonomi ve Kart Koleksiyonu', description: 'Bakiye, market ve envanter', value: 'ekonomi_koleksiyon_menu', emoji: '💰' },
-                { label: 'Eğlence ve Oyunlar', description: 'Gacha ve oyunlar', value: 'eglence_menu', emoji: '🎉' },
-                { label: 'Bilgi Komutları', description: 'Partner ve bilgi', value: 'bilgi_menu', emoji: '📚' }
+                { label: 'Moderatörlük Komutları', description: 'Sunucu yönetim ve güvenlik araçları', value: 'mod_menu', emoji: '🛡️' },
+                { label: 'Ekonomi & Kart Sistemi', description: 'Bakiye, günlük ödül, market ve gacha', value: 'ekonomi_koleksiyon_menu', emoji: '💰' },
+                { label: 'Partner Sistemleri', description: 'Otomatik partner sayacı ve durum bilgisi', value: 'partner_menu', emoji: '🤝' },
+                { label: 'Bilgi & Eğlence', description: 'Yardım ve koleksiyon listesi', value: 'bilgi_menu', emoji: '📚' }
             ])
     );
     return { embeds: [embed], components: [row] };
 }
 
-// --- SLASH KOMUTLARI YÜKLEME ---
+// --- BOT HAZIR OLDUĞUNDA SLASH KOMUTLARI KAYDI ---
 client.once('ready', async () => {
-    console.log(`[✓] ${client.user.tag} başarıyla giriş yaptı!`);
+    console.log(`[✓] ${client.user.tag} aktif ve operasyonel!`);
     const commands = [
-        new SlashCommandBuilder().setName('yardim').setDescription('Yardım panelini açar.'),
+        new SlashCommandBuilder().setName('yardim').setDescription('Profesyonel yardım panelini açar.'),
         new SlashCommandBuilder().setName('bakiye').setDescription('Cüzdanındaki Anime Cash miktarını gösterir.'),
         new SlashCommandBuilder().setName('gunluk').setDescription('Günlük Anime Cash ödülünü alırsın.'),
         new SlashCommandBuilder().setName('market').setDescription('3 saatte bir yenilenen kart marketini gösterir.'),
         new SlashCommandBuilder().setName('kart-al').setDescription('Marketten kart satın alır.').addIntegerOption(o => o.setName('no').setDescription('Market sırası (1-3)').setRequired(true)),
         new SlashCommandBuilder().setName('envanter').setDescription('Sahip olduğun kartları listeler.'),
         new SlashCommandBuilder().setName('gacha').setDescription('Şansına kutudan kart düşürür (300 Cash).'),
-        new SlashCommandBuilder().setName('kart-bilgi').setDescription('Tüm kartları listeler.'),
+        new SlashCommandBuilder().setName('kart-bilgi').setDescription('Veritabanındaki tüm kartları listeler.'),
         new SlashCommandBuilder().setName('partner-durum').setDescription('Partnerlik profili kartınızı gösterir.'),
-        new SlashCommandBuilder().setName('sil').setDescription('Mesaj temizler.').setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages).addIntegerOption(opt => opt.setName('miktar').setDescription('Miktar').setRequired(true))
+        new SlashCommandBuilder().setName('sil').setDescription('Belirtilen miktarda mesajı temizler.').setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages).addIntegerOption(opt => opt.setName('miktar').setDescription('Silinecek miktar').setRequired(true))
     ].map(command => command.toJSON());
 
     try {
         await client.application.commands.set(commands);
-        console.log('✨ Tüm Slash komutları yüklendi.');
-    } catch (e) { console.error(e); }
+        console.log('✨ Tüm Slash (/) komutları Discord\'a başarıyla senkronize edildi.');
+    } catch (e) { console.error('Slash komut yükleme hatası:', e); }
 });
 
-// --- KOMUT İŞLEME MERKEZİ ---
+// --- MERKEZİ KOMUT İŞLEME MOTORU ---
 function komutIsle(isim, user, args = [], guild = null) {
     const embed = new EmbedBuilder().setTimestamp();
     const userProfil = profilGetir(user.id);
@@ -157,65 +164,69 @@ function komutIsle(isim, user, args = [], guild = null) {
     if (isim === 'yardim') return yardimMenusuOlustur();
 
     if (isim === 'bakiye') {
-        embed.setColor('#F1C40F').setTitle('💰 Cüzdan Durumu').setDescription(`${user}, cüzdanında **${userProfil.bakiye} Anime Cash** var!`);
+        embed.setColor('#F1C40F').setTitle('💰 Cüzdan Durumu').setDescription(`${user}, cüzdanında toplam **${userProfil.bakiye} Anime Cash** bulunuyor! 🌸`);
         return { embeds: [embed] };
     }
 
     if (isim === 'gunluk') {
         userProfil.bakiye += 1000;
         ekonomiKaydet();
-        embed.setColor('#2ECC71').setTitle('🎁 Günlük Ödül').setDescription(`${user}, günlük **1000 Anime Cash** ödülün cüzdanına eklendi!`);
+        embed.setColor('#2ECC71').setTitle('🎁 Günlük Ödül Alındı').setDescription(`${user}, günlük **1000 Anime Cash** ödülün cüzdanına eklendi!`);
         return { embeds: [embed] };
     }
 
     if (isim === 'market') {
-        if (marketKartlari.length === 0) return { content: "Markette şu an kart yok." };
-        embed.setColor('#9B59B6').setTitle('🛒 Kastuhino Kart Marketi').setDescription('Satıştaki kartlar (`k!al <1-3>`):');
+        if (marketKartlari.length === 0) return { content: "🛒 Şu an markette aktif kart kalmadı, lütfen daha sonra tekrar dene." };
+        embed.setColor('#9B59B6').setTitle('🛒 Kastuhino | Kart Marketi').setDescription('Satıştaki güncel kartlar (Satın almak için `k!al <1-3>` yazabilirsin):');
         marketKartlari.forEach((k, idx) => {
-            embed.addFields({ name: `${idx + 1}. ${k.isim} (${k.sinif || 'Standart'})`, value: `Fiyat: **${k.fiyat} Cash**\n[Görsel](${k.gorsel_link})`, inline: false });
+            embed.addFields({ name: `${idx + 1}. ${k.isim} (${k.sinif || 'Standart'})`, value: `Fiyat: **${k.fiyat} Anime Cash**\n[Görseli Görüntüle](${k.gorsel_link})`, inline: false });
         });
         return { embeds: [embed] };
     }
 
     if (isim === 'kart-al' || isim === 'al') {
         const secim = parseInt(args[0]) - 1;
-        if (isNaN(secim) || secim < 0 || secim >= marketKartlari.length) return { content: "Geçerli bir sıra belirt! Örnek: `k!al 1`" };
+        if (isNaN(secim) || secim < 0 || secim >= marketKartlari.length) return { content: "⚠️ Geçerli bir market numarası belirtmelisin! Örnek: `k!al 1`" };
         const alinacak = marketKartlari[secim];
-        if (userProfil.bakiye < alinacak.fiyat) return { content: `Yeterli paran yok! Gereken: **${alinacak.fiyat}**` };
+        if (userProfil.bakiye < alinacak.fiyat) return { content: `⚠️ Yeterli Anime Cash'in yok! Gereken: **${alinacak.fiyat}**, Senin paran: **${userProfil.bakiye}**` };
 
         userProfil.bakiye -= alinacak.fiyat;
         userProfil.envanter.push(alinacak);
         ekonomiKaydet();
 
-        embed.setColor('#2ECC71').setTitle('🎉 Satın Alındı!').setDescription(`${user}, **${alinacak.isim}** kartını başarıyla aldın!`);
+        embed.setColor('#2ECC71').setTitle('🎉 Kart Satın Alındı!').setDescription(`${user}, marketten başarıyla **${alinacak.isim}** kartını satın aldın!`);
         return { embeds: [embed] };
     }
 
     if (isim === 'envanter') {
-        if (userProfil.envanter.length === 0) return { content: "Envanterin boş. `k!market` veya `k!gacha` kullanabilirsin." };
-        embed.setColor('#3498DB').setTitle(`🎒 ${user.username} - Envanter`);
+        if (userProfil.envanter.length === 0) return { content: "🎒 Envanterinde henüz hiç kart yok! `k!market` veya `k!gacha` ile kart edinebilirsin." };
+        embed.setColor('#3498DB').setTitle(`🎒 ${user.username} — Kart Envanteri`).setDescription('Sahip olduğun koleksiyon parçaları:');
         userProfil.envanter.forEach((k, idx) => {
-            embed.addFields({ name: `${idx + 1}. ${k.isim}`, value: `Sınıf: ${k.sinif || 'Standart'}`, inline: true });
+            embed.addFields({ name: `${idx + 1}. ${k.isim}`, value: `Sınıf: **${k.sinif || 'Standart'}**`, inline: true });
         });
         return { embeds: [embed] };
     }
 
     if (isim === 'gacha' || isim === 'kart-cek') {
-        if (userProfil.bakiye < 300) return { content: "Gacha çevirmek için 300 Cash gerekiyor!" };
+        if (userProfil.bakiye < 300) return { content: "⚠️ Gacha çevirmek için en az **300 Anime Cash** gerekiyor!" };
         userProfil.bakiye -= 300;
         const secilen = rastgeleKartSec();
-        if (!secilen) return { content: "Veritabanında kart bulunamadı." };
+        if (!secilen) return { content: "⚠️ Veritabanında (`kartlar.json`) hiç kart bulunmuyor." };
         userProfil.envanter.push(secilen);
         ekonomiKaydet();
 
-        embed.setColor('#3498DB').setTitle(`🎴 Gacha Çekilişi — ${secilen.isim}`).setDescription(`Sınıf: ${secilen.sinif || 'Standart'}`).setImage(secilen.gorsel_link);
+        embed.setColor('#3498DB')
+             .setTitle(`🎴 Gacha Çekilişi — ${secilen.isim}`)
+             .setDescription(`300 Cash harcadın ve yeni kart kazandın!\n**Sınıfı:** ${secilen.sinif || 'Standart'}`)
+             .setImage(secilen.gorsel_link)
+             .setFooter({ text: `${user.username} tarafından çekildi. Kalan Bakiye: ${userProfil.bakiye} Cash` });
         return { embeds: [embed] };
     }
 
     if (isim === 'kart-bilgi') {
-        if (kartlar.length === 0) return { content: "Veritabanında kart yok." };
-        embed.setColor('#F1C40F').setTitle('🃏 Tüm Kartlar');
-        kartlar.forEach((k, i) => embed.addFields({ name: `${i + 1}. ${k.isim}`, value: `Sınıf: ${k.sinif || 'Standart'}`, inline: false }));
+        if (kartlar.length === 0) return { content: "⚠️ Veritabanında kayıtlı kart bulunmuyor." };
+        embed.setColor('#F1C40F').setTitle('🃏 Veritabanındaki Tüm Kartlar');
+        kartlar.forEach((k, i) => embed.addFields({ name: `${i + 1}. ${k.isim}`, value: `Sınıf: **${k.sinif || 'Standart'}**`, inline: false }));
         return { embeds: [embed] };
     }
 
@@ -224,15 +235,22 @@ function komutIsle(isim, user, args = [], guild = null) {
     }
 }
 
-// --- ETKİLEŞİM YÖNETİMİ ---
+// --- ETKİLEŞİM YÖNETİMİ (Select Menu ve Slash) ---
 client.on('interactionCreate', async interaction => {
     if (interaction.isStringSelectMenu() && interaction.customId === 'yardim_menu') {
         const secim = interaction.values[0];
-        const resEmbed = new EmbedBuilder().setColor('#3498DB');
-        if (secim === 'mod_menu') resEmbed.setTitle('🛡️ Moderatörlük').setDescription('• `k!ban`, `k!kick`, `k!sustur`, `k!sil`');
-        else if (secim === 'ekonomi_koleksiyon_menu') resEmbed.setTitle('💰 Ekonomi').setDescription('• `k!bakiye`, `k!gunluk`, `k!market`, `k!al`, `k!envanter`, `k!gacha`');
-        else if (secim === 'eglence_menu') resEmbed.setTitle('🎉 Eğlence').setDescription('• `k!gacha` - Şansına kart düşür');
-        else if (secim === 'bilgi_menu') resEmbed.setTitle('📚 Bilgi').setDescription('• `k!kart-bilgi`, `k!partner-durum`, `k!yardim`');
+        const resEmbed = new EmbedBuilder().setColor('#3498DB').setTimestamp();
+
+        if (secim === 'mod_menu') {
+            resEmbed.setTitle('🛡️ Moderatörlük Komutları').setDescription('• `k!ban` - Üyeyi yasaklar\n• `k!kick` - Üyeyi atar\n• `k!sustur` - Üyeyi zaman aşımına uğratır\n• `k!sil` veya `/sil` - Belirtilen miktarda mesajı siler');
+        } else if (secim === 'ekonomi_koleksiyon_menu') {
+            resEmbed.setTitle('💰 Ekonomi ve Kart Sistemi').setDescription('• `k!bakiye` - Cüzdanını gösterir\n• `k!gunluk` - Günlük 1000 Cash verir\n• `k!market` - Kart marketini açar\n• `k!al <no>` - Marketten kart alır\n• `k!envanter` - Kartlarını listeler\n• `k!gacha` - Şansına kart düşürür (300 Cash)');
+        } else if (secim === 'partner_menu') {
+            resEmbed.setTitle('🤝 Partner Sistemleri').setDescription('• `k!partner-durum` veya `/partner-durum` - Resimli partnerlik profilini gösterir\n• Otomatik Algılama: Partner kanalında `https://discord.gg` paylaşım yapıldığında anında sayılır.');
+        } else if (secim === 'bilgi_menu') {
+            resEmbed.setTitle('📚 Bilgi ve Koleksiyon').setDescription('• `k!kart-bilgi` - Tüm kartları listeler\n• `k!yardim` - Yardım menüsünü açar');
+        }
+
         return interaction.update({ embeds: [resEmbed], components: interaction.message.components });
     }
 
@@ -242,14 +260,14 @@ client.on('interactionCreate', async interaction => {
     if (commandName === 'sil') {
         const miktar = interaction.options.getInteger('miktar');
         await interaction.channel.bulkDelete(miktar, true).catch(() => {});
-        return interaction.reply({ content: `${miktar} adet mesaj silindi!`, ephemeral: true });
+        return interaction.reply({ content: `✅ Başarıyla **${miktar}** adet mesaj silindi!`, ephemeral: true });
     }
 
     const sonuc = komutIsle(commandName, interaction.user, [interaction.options.getInteger('no')], interaction.guild);
     if (sonuc) await interaction.reply(sonuc);
 });
 
-// --- MESAJ KOMUTLARI VE OTOMATİK PARTNER SAYAÇ ---
+// --- MESAJLAR VE OTOMATİK PARTNER SAYAÇ MOTORU ---
 client.on('messageCreate', async message => {
     if (message.author.bot || !message.guild) return;
 
@@ -257,9 +275,11 @@ client.on('messageCreate', async message => {
         partners[message.author.id] = { bugun: 0, hafta: 0, ay: 0, toplam: 0 };
     }
 
-    // Otomatik Partner Sayma
+    // 1. KESİN ÇALIŞAN OTOMATİK PARTNER ALGILAMA & SAYMA
     if (message.channel.id === PARTNER_KANAL_ID) {
-        if (message.content.includes('discord.gg/') || message.content.includes('discord.com/invite/')) {
+        const text = message.content.toLowerCase();
+        // Kullanıcının belirttiği gibi https://discord.gg veya discord.gg/ geçtiğinde anında tetiklenir
+        if (text.includes('https://discord.gg') || text.includes('discord.gg/')) {
             partners[message.author.id].bugun += 1;
             partners[message.author.id].hafta += 1;
             partners[message.author.id].ay += 1;
@@ -267,33 +287,33 @@ client.on('messageCreate', async message => {
             savePartners();
 
             const embed = createPartnerEmbed(message.guild, message.author, partners[message.author.id]);
-            return message.reply({ content: '✅ Partnerlik başarıyla sayıldı!', embeds: [embed] });
+            return message.reply({ content: '✅ **Partnerlik başarıyla sayıldı!**', embeds: [embed] });
         }
     }
 
-    // Moderatörlük Prefix Komutları
+    // 2. MODERATÖRLÜK PREFIX KOMUTLARI
     if (message.content.startsWith('k!sustur')) {
-        if (!message.member.permissions.has(PermissionFlagsBits.ModerateMembers)) return message.reply('Yetkin yok.');
+        if (!message.member.permissions.has(PermissionFlagsBits.ModerateMembers)) return message.reply('⚠️ Bu komutu kullanmak için yetkin yok.');
         const target = message.mentions.members.first();
-        if (!target) return message.reply('Üye etiketle!');
-        await target.timeout(10 * 60 * 1000, 'k!sustur').catch(() => {});
-        return message.reply(`✅ **${target.user.tag}** susturuldu.`);
+        if (!target) return message.reply('⚠️ Lütfen susturulacak üyeyi etiketleyin!');
+        await target.timeout(10 * 60 * 1000, 'k!sustur komutu').catch(() => {});
+        return message.reply(`✅ **${target.user.tag}** 10 dakika süreyle susturuldu.`);
     }
 
     if (message.content.startsWith('k!kick')) {
-        if (!message.member.permissions.has(PermissionFlagsBits.KickMembers)) return message.reply('Yetkin yok.');
+        if (!message.member.permissions.has(PermissionFlagsBits.KickMembers)) return message.reply('⚠️ Bu komutu kullanmak için yetkin yok.');
         const target = message.mentions.members.first();
-        if (!target) return message.reply('Üye etiketle!');
-        await target.kick().catch(() => {});
-        return message.reply(`✅ **${target.user.tag}** atıldı.`);
+        if (!target) return message.reply('⚠️ Lütfen sunucudan atılacak üyeyi etiketleyin!');
+        await target.kick('k!kick komutu').catch(() => {});
+        return message.reply(`✅ **${target.user.tag}** sunucudan atıldı.`);
     }
 
     if (message.content.startsWith('k!ban')) {
-        if (!message.member.permissions.has(PermissionFlagsBits.BanMembers)) return message.reply('Yetkin yok.');
+        if (!message.member.permissions.has(PermissionFlagsBits.BanMembers)) return message.reply('⚠️ Bu komutu kullanmak için yetkin yok.');
         const target = message.mentions.members.first();
-        if (!target) return message.reply('Üye etiketle!');
-        await target.ban().catch(() => {});
-        return message.reply(`✅ **${target.user.tag}** yasaklandı.`);
+        if (!target) return message.reply('⚠️ Lütfen yasaklanacak üyeyi etiketleyin!');
+        await target.ban({ reason: 'k!ban komutu' }).catch(() => {});
+        return message.reply(`✅ **${target.user.tag}** sunucudan yasaklandı.`);
     }
 
     if (!message.content.startsWith('k!')) return;
@@ -311,4 +331,5 @@ client.on('messageCreate', async message => {
     if (sonuc) await message.reply(sonuc);
 });
 
+// --- BOT GİRİŞİ ---
 client.login(process.env.DISCORD_TOKEN || process.env.TOKEN);
