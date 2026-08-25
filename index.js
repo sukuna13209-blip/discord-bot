@@ -11,13 +11,26 @@ const client = new Client({
 
 // --- VERİTABANI YÖNETİMİ ---
 let kartlar = [];
-try { kartlar = JSON.parse(fs.readFileSync('./kartlar.json', 'utf8')); } catch (e) { console.log("⚠️ kartlar.json okunamadı veya boş!"); }
+try { 
+    kartlar = JSON.parse(fs.readFileSync('./kartlar.json', 'utf8')); 
+} catch (e) { 
+    console.log("⚠️ kartlar.json okunamadı veya boş!"); 
+}
 
 let partnerler = [];
-try { partnerler = JSON.parse(fs.readFileSync('./partners.json', 'utf8')); } catch (e) { console.log("⚠️ partners.json okunamadı veya boş!"); }
+try { 
+    partnerler = JSON.parse(fs.readFileSync('./partners.json', 'utf8')); 
+    console.log(`🤝 Yüklenen partner sayısı: ${partnerler.length}`);
+} catch (e) { 
+    console.log("⚠️ partners.json okunamadı! Lütfen partners.json dosyasının var olduğundan emin ol."); 
+}
 
 let ekonomi = {};
-try { ekonomi = JSON.parse(fs.readFileSync('./ekonomi.json', 'utf8')); } catch (e) { ekonomi = {}; }
+try { 
+    ekonomi = JSON.parse(fs.readFileSync('./ekonomi.json', 'utf8')); 
+} catch (e) { 
+    ekonomi = {}; 
+}
 
 function ekonomiKaydet() {
     fs.writeFileSync('./ekonomi.json', JSON.stringify(ekonomi, null, 2));
@@ -200,10 +213,20 @@ function komutIsle(isim, user, args = []) {
     }
 
     if (isim === 'partner') {
-        if (partnerler.length === 0) return { content: "Kayıtlı partner sunucu bulunmuyor." };
-        embed.setColor('#2ECC71').setTitle('🤝 Partner Sunucular');
-        partnerler.forEach(p => embed.addFields({ name: p.isim, value: `[Davet Linki](${p.link})`, inline: false }));
-        return { embeds: [embed] };
+        // Her ihtimale karşı partners.json dosyasını komut anında tekrar okuyalım ki güncel veriler gelsin
+        try {
+            const guncelPartnerler = JSON.parse(fs.readFileSync('./partners.json', 'utf8'));
+            if (!guncelPartnerler || guncelPartnerler.length === 0) {
+                return { content: "Kayıtlı partner sunucu bulunmuyor veya `partners.json` boş." };
+            }
+            embed.setColor('#2ECC71').setTitle('🤝 Partner Sunucular');
+            guncelPartnerler.forEach(p => {
+                embed.addFields({ name: p.isim || "İsimsiz Sunucu", value: `[Davet Linki](${p.link || 'https://discord.com'})`, inline: false });
+            });
+            return { embeds: [embed] };
+        } catch (err) {
+            return { content: "Partnerler okunurken bir hata oluştu! `partners.json` dosyanı kontrol et." };
+        }
     }
 }
 
