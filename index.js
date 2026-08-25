@@ -102,7 +102,7 @@ function komutIsle(isim, user, hedefUye = null) {
         return yardimMenusuOlustur();
     }
 
-    if (isim === 'gacha' || isim === 'kart-cek' || isim === 'kart') {
+    if (isim === 'gacha' || isim === 'kart-cek') {
         if (kartlar.length === 0) return { content: "Henüz veritabanında hiç kart bulunmuyor!" };
         const secilenKart = kartlar[Math.floor(Math.random() * kartlar.length)];
         embed.setColor('#3498DB')
@@ -181,9 +181,25 @@ client.on('interactionCreate', async interaction => {
         if (secim === 'mod_menu') {
             resEmbed.setTitle('🛡️ Moderatörlük Komutları').setDescription('• `k!ban / /ban` - Üyeyi sunucudan yasaklar\n• `k!kick / /kick` - Üyeyi sunucudan atar\n• `k!mute / /mute` - Üyeyi susturur\n• `k!temizle / /temizle` - Belirtilen miktarda mesajı siler');
         } else if (secim === 'eglence_menu') {
-            resEmbed.setTitle('🎉 Eğlence ve Oyun Komutları').setDescription('• `k!anime-tahmin / /anime-tahmin` - İpuçlarından doğru animeyi bilme\n• `k!karakter-tahmin / /karakter-tahmin` - Anime karakterini tahmin etme\n• `k!gacha / /gacha` - Şansına kutudan kart düşürür\n• `k!kart çek` - Kastuhino seti kartı çeker\n• `k!anime-soz / /anime-soz` - Rastgele anime sözü atar\n• `k!saril / /saril` - İstediğin kişiye sarılır');
+            resEmbed.setTitle('🎉 Eğlence ve Oyun Komutları').setDescription(
+                'İster `k!` isterseniz `/` ön ekiyle kullanabilirsiniz:\n\n' +
+                '🎮 **k!anime-tahmin / /anime-tahmin**\n┗ *İpuçlarından yola çıkarak doğru animeyi ilk bilen kazanır.*\n\n' +
+                '👑 **k!karakter-tahmin / /karakter-tahmin**\n┗ *Açıklanan anime karakterini tahmin etme oyunu.*\n\n' +
+                '📺 **k!anime-oner / /anime-oner**\n┗ *İzlemen için rastgele kaliteli bir anime önerir.*\n\n' +
+                '💬 **k!anime-soz / /anime-soz**\n┗ *Efsaneleşmiş rastgele anime sözleri atar.*\n\n' +
+                '📦 **k!gacha / /gacha**\n┗ *Şansına kutudan rastgele anime karakteri düşürür.*\n\n' +
+                '💖 **k!waifu-puanla / /waifu-puanla**\n┗ *Waifu veya husbando skorunuzu hesaplar.*\n\n' +
+                '🤗 **k!saril @üye / /saril**\n┗ *Etiketlediğin kişiye sıcak bir sarılma GİFi yollar.*\n\n' +
+                '👋 **k!tokat @üye / /tokat**\n┗ *Etiketlediğin kişiye eğlenceli bir tokat atma GİFi yollar.*'
+            );
         } else if (secim === 'bilgi_menu') {
-            resEmbed.setTitle('📚 Bilgi ve Sistem Komutları').setDescription('• `k!kart-bilgi / /kart-bilgi` - Tüm kartları ve sınıflarını listeler\n• `k!partner / /partner` - Partner sunucuları listeler\n• `k!yardim / /yardim` - Yardım menüsünü açar');
+            resEmbed.setTitle('📚 Bilgi ve Sistem Komutları').setDescription(
+                'İster `k!` isterseniz `/` ön ekiyle kullanabilirsiniz:\n\n' +
+                '🃏 **k!kart bilgi / /kart-bilgi**\n┗ *Veritabanındaki tüm kartları ve sınıflarını listeler.*\n\n' +
+                '🎴 **k!kart çek / /kart-cek**\n┗ *Kastuhino koleksiyon setinden kart çeker.*\n\n' +
+                '🤝 **k!partner / /partner**\n┗ *Değerli partner sunucularımızı listeler.*\n\n' +
+                '🛡️ **k!yardim / /yardim**\n┗ *Yardım ve kontrol panelini açar.*'
+            );
         }
 
         return interaction.update({ embeds: [resEmbed], components: interaction.message.components });
@@ -193,29 +209,46 @@ client.on('interactionCreate', async interaction => {
     const commandName = interaction.commandName;
     const hedefUye = interaction.options.getUser('uye');
 
-    const sonuc = komutIsle(commandName, interaction.user, hedefUye);
+    let mappedName = commandName;
+    if (commandName === 'kart-cek') mappedName = 'kart-cek';
+
+    const sonuc = komutIsle(mappedName, interaction.user, hedefUye);
     await interaction.reply(sonuc);
 });
 
-// Klasik (k!) Komutlar
+// Klasik (k!) Komutlar (Boşluklu komutlar düzeltildi)
 client.on('messageCreate', async message => {
     if (message.author.bot) return;
     const content = message.content.trim().toLowerCase();
     if (!content.startsWith('k!')) return;
 
-    const parts = content.slice(2).trim().split(' ');
-    const komutAdi = parts[0];
-    const ikinciKelime = parts[1];
+    // Fazla boşlukları temizleyip komut kelimelerine ayırıyoruz
+    const parts = content.slice(2).trim().split(/\s+/);
+    let mappedName = '';
     let hedefUye = message.mentions.users.first();
 
-    let mappedName = komutAdi;
-    if (komutAdi === 'kart' && ikinciKelime === 'çek') mappedName = 'kart-cek';
-    if (komutAdi === 'kart' && ikinciKelime === 'bilgi') mappedName = 'kart-bilgi';
-    if (komutAdi === 'anime' && ikinciKelime === 'tahmin') mappedName = 'anime-tahmin';
-    if (komutAdi === 'karakter' && ikinciKelime === 'tahmin') mappedName = 'karakter-tahmin';
-    if (komutAdi === 'anime' && ikinciKelime === 'soz') mappedName = 'anime-soz';
-    if (komutAdi === 'anime' && ikinciKelime === 'oner') mappedName = 'anime-oner';
-    if (komutAdi === 'waifu' && ikinciKelime === 'puanla') mappedName = 'waifu-puanla';
+    // Komut eşleştirmeleri (k! kart bilgi veya k!kart-bilgi vb. destekler)
+    const birlesik = parts.join('-');
+    const kelime1 = parts[0];
+    const kelime2 = parts[1];
+
+    if (content === 'k! kart çek' || content === 'k!kart çek' || content === 'k!kart-cek' || kelime1 === 'gacha') {
+        mappedName = 'kart-cek';
+    } else if (content === 'k! kart bilgi' || content === 'k!kart bilgi' || content === 'k!kart-bilgi') {
+        mappedName = 'kart-bilgi';
+    } else if (birlesik.includes('anime-tahmin') || (kelime1 === 'anime' && kelime2 === 'tahmin')) {
+        mappedName = 'anime-tahmin';
+    } else if (birlesik.includes('karakter-tahmin') || (kelime1 === 'karakter' && kelime2 === 'tahmin')) {
+        mappedName = 'karakter-tahmin';
+    } else if (birlesik.includes('anime-soz') || (kelime1 === 'anime' && kelime2 === 'soz')) {
+        mappedName = 'anime-soz';
+    } else if (birlesik.includes('anime-oner') || (kelime1 === 'anime' && kelime2 === 'oner')) {
+        mappedName = 'anime-oner';
+    } else if (birlesik.includes('waifu-puanla') || (kelime1 === 'waifu' && kelime2 === 'puanla')) {
+        mappedName = 'waifu-puanla';
+    } else {
+        mappedName = kelime1; // yardım, partner, saril, tokat vb.
+    }
 
     const sonuc = komutIsle(mappedName, message.author, hedefUye);
     if (sonuc) {
