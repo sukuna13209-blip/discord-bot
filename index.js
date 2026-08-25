@@ -11,6 +11,7 @@ server.listen(process.env.PORT || 3000);
 
 // --- SABİT AYARLAR ---
 const PARTNER_KANAL_ID = '1514756158831988876'; // Otomatik partner algılama kanalı
+const PREFIX = 'k!';
 
 const client = new Client({
     intents: [
@@ -63,14 +64,15 @@ function haftalikSiralamaBul(userId) {
 }
 
 // --- GÖRSELDEKİ BİREBİR PARTNER EMBED TASARIMI ---
-function createPartnerEmbed(user, data, guild) {
+function createPartnerEmbed(user, data) {
     const siralama = haftalikSiralamaBul(user.id);
-    const embed = new EmbedBuilder()
+    return new EmbedBuilder()
         .setColor('#6b21ff')
         .setAuthor({ 
             name: user.tag, 
             iconURL: user.displayAvatarURL({ dynamic: true }) 
         })
+        .setThumbnail(user.displayAvatarURL({ dynamic: true, size: 512 })) // Sağ üstteki kullanıcı avatarı
         .setTitle('Partnerlik Profili')
         .setDescription(
             `**Bugünlük Partnerin:** ${data.bugun || 0}\n` +
@@ -79,15 +81,8 @@ function createPartnerEmbed(user, data, guild) {
             `**Toplam Partnerin:** ${data.toplam || 0}\n` +
             `**Haftalık Sıralaman:** #${siralama}`
         )
-        .setImage('https://i.postimg.cc/PqJ78dP6/c84c6583-884f-46c2-ba81-933db6aaeff8.png') // Sınırsız Büyük Afiş Linki
+        .setImage('https://i.postimg.cc/PqJ78dP6/c84c6583-884f-46c2-ba81-933db6aaeff8.png') // Alt kısımdaki büyük afiş resmi
         .setTimestamp();
-
-    // Sağ üstteki küçük resim (Sunucu Logosu / PP'si)
-    if (guild && guild.iconURL()) {
-        embed.setThumbnail(guild.iconURL({ dynamic: true, size: 512 }));
-    }
-
-    return embed;
 }
 
 // --- DENGELİ KART SEÇİMİ & MARKET ---
@@ -130,7 +125,7 @@ function yardimMenusuOlustur(username) {
         .setTitle('🛡️ Kastuhino Bot — Kapsamlı Yardım & Kontrol Paneli')
         .setDescription(
             `Merhaba **${username}**, Kastuhino Bot komut rehberine hoş geldin.\n\n` +
-            `🔹 **Bot Ön Eki (Prefix):** \`h!\` veya \`/\`\n\n` +
+            `🔹 **Bot Ön Eki (Prefix):** \`${PREFIX}\` veya \`/\`\n\n` +
             `Aşağıdaki açılır menüyü kullanarak kategoriler arasında geçiş yapabilirsiniz.\n\n` +
             `📂 **Kategoriler:**\n` +
             `• 🔨 **Moderasyon:** Ban, mute, rol, uyarı ve jüri yargılama sistemi\n` +
@@ -179,7 +174,7 @@ client.once('ready', async () => {
 });
 
 // --- KOMUT MERKEZİ ---
-function komutIsle(isim, user, args = [], guild = null) {
+function komutIsle(isim, user, args = []) {
     const embed = new EmbedBuilder().setTimestamp();
     const userProfil = profilGetir(user.id);
 
@@ -203,7 +198,7 @@ function komutIsle(isim, user, args = [], guild = null) {
 
     if (isim === 'market') {
         if (marketKartlari.length === 0) return { content: "🛒 Markette şu an aktif kart yok." };
-        embed.setColor('#9B59B6').setTitle('🛒 Kastuhino Kart Marketi').setDescription('Satıştaki kartlar (`h!al <1-3>`):');
+        embed.setColor('#9B59B6').setTitle('🛒 Kastuhino Kart Marketi').setDescription(`Satıştaki kartlar (\`${PREFIX}al <1-3>\`):`);
         marketKartlari.forEach((k, idx) => {
             embed.addFields({ name: `${idx + 1}. ${k.isim} (${k.sinif || 'Standart'})`, value: `Fiyat: **${k.fiyat} Cash**\n[Görsel](${k.gorsel_link})`, inline: false });
         });
@@ -212,7 +207,7 @@ function komutIsle(isim, user, args = [], guild = null) {
 
     if (isim === 'kart-al' || isim === 'al') {
         const secim = parseInt(args[0]) - 1;
-        if (isNaN(secim) || secim < 0 || secim >= marketKartlari.length) return { content: "⚠️ Geçerli bir sıra belirt! Örnek: `h!al 1`" };
+        if (isNaN(secim) || secim < 0 || secim >= marketKartlari.length) return { content: `⚠️ Geçerli bir sıra belirt! Örnek: \`${PREFIX}al 1\`` };
         const alinacak = marketKartlari[secim];
         if (userProfil.bakiye < alinacak.fiyat) return { content: `⚠️ Yeterli paran yok! Gereken: **${alinacak.fiyat}**` };
 
@@ -253,7 +248,7 @@ function komutIsle(isim, user, args = [], guild = null) {
     }
 
     if (isim === 'partner-durum') {
-        return { embeds: [createPartnerEmbed(user, partners[user.id], guild)] };
+        return { embeds: [createPartnerEmbed(user, partners[user.id])] };
     }
 }
 
@@ -269,15 +264,15 @@ client.on('interactionCreate', async interaction => {
         const resEmbed = new EmbedBuilder().setColor('#3498DB').setTimestamp();
 
         if (secim === 'mod_menu') {
-            resEmbed.setTitle('🔨 Moderasyon Komutları').setDescription('• `h!ban @üye [sebep]` - Yasaklar\n• `h!kick @üye [sebep]` - Atar\n• `h!mute @üye [dakika]` - Susturur\n• `h!sil [1-100]` - Mesaj siler\n• `h!uyar` / `h!sicil` - Uyarı sistemleri');
+            resEmbed.setTitle('🔨 Moderasyon Komutları').setDescription(`• \`${PREFIX}ban @üye [sebep]\` - Yasaklar\n• \`${PREFIX}kick @üye [sebep]\` - Atar\n• \`${PREFIX}mute @üye [dakika]\` - Susturur\n• \`${PREFIX}sil [1-100]\` - Mesaj siler\n• \`${PREFIX}uyar\` / \`${PREFIX}sicil\` - Uyarı sistemleri`);
         } else if (secim === 'kanal_menu') {
-            resEmbed.setTitle('🔒 Kanal Yönetimi Komutları').setDescription('• `h!lock` - Kanalı kapatır\n• `h!unlock` - Kanalı açar\n• `h!bakım aç <süre>` - Bakım modu');
+            resEmbed.setTitle('🔒 Kanal Yönetimi Komutları').setDescription(`• \`${PREFIX}lock\` - Kanalı kapatır\n• \`${PREFIX}unlock\` - Kanalı açar\n• \`${PREFIX}bakım aç <süre>\` - Bakım modu`);
         } else if (secim === 'sunucu_ayar_menu') {
-            resEmbed.setTitle('⚙️ Sunucu Ayarları Komutları').setDescription('• `h!tagayar <tag>` - Tag ayarlar\n• `h!otorol ayarla @rol` - Otorol\n• `h!logayar` - Log kanalı');
+            resEmbed.setTitle('⚙️ Sunucu Ayarları Komutları').setDescription(`• \`${PREFIX}tagayar <tag>\` - Tag ayarlar\n• \`${PREFIX}otorol ayarla @rol\` - Otorol\n• \`${PREFIX}logayar\` - Log kanalı`);
         } else if (secim === 'genel_menu') {
-            resEmbed.setTitle('🌐 Genel Komutlar & Sistemler').setDescription('• `h!çekiliş` • `h!oylama` • `h!davet` • `h!afk`');
+            resEmbed.setTitle('🌐 Genel Komutlar & Sistemler').setDescription(`• \`${PREFIX}çekiliş\` • \`${PREFIX}oylama\` • \`${PREFIX}davet\` • \`${PREFIX}afk\``);
         } else if (secim === 'ekonomi_menu') {
-            resEmbed.setTitle('💰 Ekonomi & Kart Sistemi').setDescription('• `h!bakiye` • `h!gunluk` • `h!market` • `h!al` • `h!envanter` • `h!gacha`');
+            resEmbed.setTitle('💰 Ekonomi & Kart Sistemi').setDescription(`• \`${PREFIX}bakiye\` • \`${PREFIX}gunluk\` • \`${PREFIX}market\` • \`${PREFIX}al\` • \`${PREFIX}envanter\` • \`${PREFIX}gacha\``);
         }
 
         return interaction.update({ embeds: [resEmbed], components: interaction.message.components });
@@ -295,7 +290,7 @@ client.on('interactionCreate', async interaction => {
     let arg = null;
     if (commandName === 'kart-al') arg = interaction.options.getInteger('no');
 
-    const sonuc = komutIsle(commandName, interaction.user, [arg], interaction.guild);
+    const sonuc = komutIsle(commandName, interaction.user, [arg]);
     if (sonuc) await interaction.reply(sonuc);
 });
 
@@ -317,21 +312,21 @@ client.on('messageCreate', async message => {
             partners[message.author.id].toplam += 1;
             savePartners();
 
-            const embed = createPartnerEmbed(message.author, partners[message.author.id], message.guild);
+            const embed = createPartnerEmbed(message.author, partners[message.author.id]);
             return message.reply({ content: '✅ Partnerlik sayıldı!', embeds: [embed] });
         }
     }
 
-    // MODERASYON PREFIX KOMUTLARI (h!)
-    if (message.content.startsWith('h!mute') || message.content.startsWith('h!sustur')) {
+    // MODERASYON PREFIX KOMUTLARI (k!)
+    if (message.content.startsWith(`${PREFIX}mute`) || message.content.startsWith(`${PREFIX}sustur`)) {
         if (!message.member.permissions.has(PermissionFlagsBits.ModerateMembers)) return message.reply('⚠️ Yetkin yok.');
         const target = message.mentions.members.first();
         if (!target) return message.reply('⚠️ Üye etiketle!');
-        await target.timeout(10 * 60 * 1000, 'h!mute').catch(() => {});
+        await target.timeout(10 * 60 * 1000, `${PREFIX}mute`).catch(() => {});
         return message.reply(`✅ **${target.user.tag}** susturuldu.`);
     }
 
-    if (message.content.startsWith('h!kick')) {
+    if (message.content.startsWith(`${PREFIX}kick`)) {
         if (!message.member.permissions.has(PermissionFlagsBits.KickMembers)) return message.reply('⚠️ Yetkin yok.');
         const target = message.mentions.members.first();
         if (!target) return message.reply('⚠️ Üye etiketle!');
@@ -339,7 +334,7 @@ client.on('messageCreate', async message => {
         return message.reply(`✅ **${target.user.tag}** atıldı.`);
     }
 
-    if (message.content.startsWith('h!ban')) {
+    if (message.content.startsWith(`${PREFIX}ban`)) {
         if (!message.member.permissions.has(PermissionFlagsBits.BanMembers)) return message.reply('⚠️ Yetkin yok.');
         const target = message.mentions.members.first();
         if (!target) return message.reply('⚠️ Üye etiketle!');
@@ -347,7 +342,7 @@ client.on('messageCreate', async message => {
         return message.reply(`✅ **${target.user.tag}** yasaklandı.`);
     }
 
-    if (message.content.startsWith('h!sil')) {
+    if (message.content.startsWith(`${PREFIX}sil`)) {
         if (!message.member.permissions.has(PermissionFlagsBits.ManageMessages)) return message.reply('⚠️ Yetkin yok.');
         const args = message.content.split(/\s+/);
         const miktar = parseInt(args[1]);
@@ -356,9 +351,9 @@ client.on('messageCreate', async message => {
         return message.reply(`✅ **${miktar}** mesaj silindi!`).then(msg => setTimeout(() => msg.delete().catch(() => {}), 3000));
     }
 
-    if (!message.content.startsWith('h!')) return;
+    if (!message.content.startsWith(PREFIX)) return;
 
-    const parts = message.content.slice(2).trim().split(/\s+/);
+    const parts = message.content.slice(PREFIX.length).trim().split(/\s+/);
     const cmd = parts[0];
     const arg1 = parts[1];
 
@@ -367,7 +362,7 @@ client.on('messageCreate', async message => {
     if (cmd === 'kart' && arg1 === 'bilgi') islenen = 'kart-bilgi';
     if (cmd === 'partner' && arg1 === 'durum') islenen = 'partner-durum';
 
-    const sonuc = komutIsle(islenen, message.author, [arg1], message.guild);
+    const sonuc = komutIsle(islenen, message.author, [arg1]);
     if (sonuc) await message.reply(sonuc);
 });
 
