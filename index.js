@@ -124,7 +124,7 @@ function marketiYenile() {
 setInterval(marketiYenile, 3 * 60 * 60 * 1000);
 marketiYenile();
 
-// --- KAPSAMLI YARDIM MENÜSÜ ---
+// --- Kapsamlı Yardım Menüsü ---
 function yardimMenusuOlustur(username) {
     const embed = new EmbedBuilder()
         .setColor('#2F3136')
@@ -234,6 +234,7 @@ function komutIsle(isim, user, args = [], guild = null) {
         return { embeds: [embed] };
     }
 
+    // --- 2. FOTOĞRAFDAKİ BİREBİR GACHA / KART ÇEKME TASARIMI ---
     if (isim === 'gacha') {
         if (userProfil.bakiye < 300) return { content: "⚠️ 300 Cash gerekiyor!" };
         userProfil.bakiye -= 300;
@@ -242,7 +243,18 @@ function komutIsle(isim, user, args = [], guild = null) {
         userProfil.envanter.push(secilen);
         ekonomiKaydet();
 
-        embed.setColor('#3498DB').setTitle(`🎴 Gacha — ${secilen.isim}`).setDescription(`Sınıf: ${secilen.sinif || 'Standart'}`).setImage(secilen.gorsel_link);
+        embed.setColor('#2F3136')
+            .setTitle(`${secilen.isim}`)
+            .setDescription(
+                `**Sınıfı / Nadirliği:** ${secilen.sinif || 'Standart'}\n\n` +
+                `Kastuhino Koleksiyon Seti'nden yeni bir kart çıkardın!`
+            )
+            .setImage(secilen.gorsel_link)
+            .setFooter({ 
+                text: `${user.tag} tarafından çekildi`, 
+                iconURL: user.displayAvatarURL({ dynamic: true }) 
+            });
+
         return { embeds: [embed] };
     }
 
@@ -366,7 +378,7 @@ client.on('messageCreate', async message => {
     let islenen = cmd;
     if (cmd === 'günlük') islenen = 'gunluk';
     if (cmd === 'al') islenen = 'kart-al';
-    if (cmd === 'çek' || (cmd === 'kart' && arg1 === 'çek')) islenen = 'gacha';
+    if (cmd === 'çek' || cmd === 'gacha' || (cmd === 'kart' && arg1 === 'çek')) islenen = 'gacha';
     if (cmd === 'kart' && arg1 === 'bilgi') islenen = 'kart-bilgi';
     if (cmd === 'partner' && arg1 === 'durum') islenen = 'partner-durum';
     if (cmd === 'yardım') islenen = 'yardim';
