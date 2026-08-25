@@ -16,7 +16,7 @@ try { kartlar = JSON.parse(fs.readFileSync('./kartlar.json', 'utf8')); } catch (
 let partnerler = [];
 try { partnerler = JSON.parse(fs.readFileSync('./partners.json', 'utf8')); } catch (e) { console.log("partners.json okunamadı!"); }
 
-// Basit Ekonomi ve Kullanıcı Verileri Dosyası
+// Ekonomi ve Kullanıcı Verileri Dosyası
 let ekonomi = {};
 try { ekonomi = JSON.parse(fs.readFileSync('./ekonomi.json', 'utf8')); } catch (e) { ekonomi = {}; }
 
@@ -31,20 +31,47 @@ function profilGetir(userId) {
     return ekonomi[userId];
 }
 
+// Dengeli Kart Seçim Sistemi (Sürekli efsanevi atmaması için oranlı sistem)
+function rastgeleKartSec() {
+    if (kartlar.length === 0) return null;
+
+    // Kartları sınıflarına göre ayıralım
+    const efsaneviler = kartlar.kfilter ? [] : kartlar.filter(k => k.sinif.toLowerCase().includes('efsanevi') || k.sinif.toLowerCase().includes('legendary'));
+    const nadirler = kartlar.filter(k => k.sinif.toLowerCase().includes('nadir') || k.sinif.toLowerCase().includes('rare'));
+    const normaller = kartlar.filter(k => !k.sinif.toLowerCase().includes('efsanevi') && !k.sinif.toLowerCase().includes('legendary') && !k.sinif.toLowerCase().includes('nadir') && !k.sinif.toLowerCase().includes('rare'));
+
+    const sans = Math.random() * 100; // 0 ile 100 arası şans
+
+    // %60 Normal/Yaygın, %30 Nadir, %10 Efsanevi çıkma şansı (Eğer o sınıfta kart varsa)
+    if (sans < 60 && normaller.length > 0) {
+        return normaller[Math.floor(Math.random() * normaller.length)];
+    } else if (sans < 90 && nadirler.length > 0) {
+        return nadirler[Math.floor(Math.random() * nadirler.length)];
+    } else if (efsaneviler.length > 0) {
+        return efsaneviler[Math.floor(Math.random() * efsaneviler.length)];
+    }
+
+    // Eğer filtrelerde havuz boş kalırsa direkt düz rastgele at
+    return kartlar[Math.floor(Math.random() * kartlar.length)];
+}
+
 // 3 Saatte Bir Değişen Market Sistemi
 let marketKartlari = [];
 function marketiYenile() {
     if (kartlar.length === 0) return;
     marketKartlari = [];
     for (let i = 0; i < 3; i++) {
-        const rastgele = kartlar[Math.floor(Math.random() * kartlar.length)];
+        const rastgele = rastgeleKartSec();
         let fiyat = 500;
-        if (rastgele.sinif.toLowerCase().includes('efsanevi')) fiyat = 5000;
-        else if (rastgele.sinif.toLowerCase().includes('nadir')) fiyat = 2000;
+        const sinifKucuk = rastgele.sinif.toLowerCase();
+        
+        if (sinifKucuk.includes('efsanevi') || sinifKucuk.includes('legendary')) fiyat = 4000;
+        else if (sinifKucuk.includes('nadir') || sinifKucuk.includes('rare')) fiyat = 1500;
+        else fiyat = 500;
         
         marketKartlari.push({ ...rastgele, fiyat });
     }
-    console.log("🛒 Kart marketi yenilendi!");
+    console.log("🛒 Kart marketi dengeli oranlarla yenilendi!");
 }
 setInterval(marketiYenile, 3 * 60 * 60 * 1000);
 marketiYenile();
@@ -83,7 +110,7 @@ client.on('ready', async () => {
     } catch (e) { console.error(e); }
 });
 
-// Yeni Düzenlenmiş Yardım Menüsü ve 4'lü Kategori Sistemi
+// 4 Kategorili Eksiksiz Yardım Menüsü
 function yardimMenusuOlustur() {
     const embed = new EmbedBuilder()
         .setColor('#2F3136')
@@ -163,7 +190,9 @@ function komutIsle(isim, user, args = [], hedefUye = null) {
         userProfil.bakiye -= 300;
 
         if (kartlar.length === 0) return { content: "Veritabanında kart bulunmuyor!" };
-        const secilenKart = kartlar[Math.floor(Math.random() * kartlar.length)];
+        
+        // Dengeli oranlı kart seçimi çağrılıyor
+        const secilenKart = rastgeleKartSec();
         userProfil.envanter.push(secilenKart);
         ekonomiKaydet();
 
@@ -192,7 +221,7 @@ function komutIsle(isim, user, args = [], hedefUye = null) {
     }
 }
 
-// Menü Seçim İçerikleri (Açılır Menü Yönetimi)
+// Menü Seçim İçerikleri (4 Kategori Tam Liste)
 client.on('interactionCreate', async interaction => {
     if (interaction.isStringSelectMenu() && interaction.customId === 'yardim_menu') {
         const secim = interaction.values[0];
