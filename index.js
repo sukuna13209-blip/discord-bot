@@ -5,7 +5,7 @@ const http = require('http');
 // --- RENDER UPTIME SUNUCUSU ---
 const server = http.createServer((req, res) => {
     res.writeHead(200, { 'Content-Type': 'text/plain' });
-    res.end('Kastuhino Bot Aktif ve Çalışıyor!\n');
+    res.end('Kastuhino Bot Aktif!\n');
 });
 server.listen(process.env.PORT || 3000);
 
@@ -19,7 +19,8 @@ const client = new Client({
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.MessageContent,
         GatewayIntentBits.GuildMembers,
-        GatewayIntentBits.GuildModeration
+        GatewayIntentBits.GuildModeration,
+        GatewayIntentBits.GuildWebhooks
     ]
 });
 
@@ -27,409 +28,285 @@ const client = new Client({
 const PARTNER_FILE = './partners.json';
 const EKONOMI_FILE = './ekonomi.json';
 const KARTLAR_FILE = './kartlar.json';
+const AYARLAR_FILE = './ayarlar.json';
+const AFK_FILE = './afk.json';
 
 let partners = {};
-if (fs.existsSync(PARTNER_FILE)) {
-    try { partners = JSON.parse(fs.readFileSync(PARTNER_FILE, 'utf8')); } catch (e) { partners = {}; }
-}
-function savePartners() {
-    fs.writeFileSync(PARTNER_FILE, JSON.stringify(partners, null, 2));
-}
-
 let ekonomi = {};
-if (fs.existsSync(EKONOMI_FILE)) {
-    try { ekonomi = JSON.parse(fs.readFileSync(EKONOMI_FILE, 'utf8')); } catch (e) { ekonomi = {}; }
+let kartlar = [];
+let ayarlar = { kufurEngel: false, reklamEngel: false, linkEngel: false, capsEngel: false };
+let afkVeri = {};
+
+function veriYukle() {
+    if (fs.existsSync(PARTNER_FILE)) partners = JSON.parse(fs.readFileSync(PARTNER_FILE, 'utf8'));
+    if (fs.existsSync(EKONOMI_FILE)) ekonomi = JSON.parse(fs.readFileSync(EKONOMI_FILE, 'utf8'));
+    if (fs.existsSync(KARTLAR_FILE)) kartlar = JSON.parse(fs.readFileSync(KARTLAR_FILE, 'utf8'));
+    if (fs.existsSync(AYARLAR_FILE)) ayarlar = JSON.parse(fs.readFileSync(AYARLAR_FILE, 'utf8'));
+    if (fs.existsSync(AFK_FILE)) afkVeri = JSON.parse(fs.readFileSync(AFK_FILE, 'utf8'));
 }
-function ekonomiKaydet() {
-    fs.writeFileSync(EKONOMI_FILE, JSON.stringify(ekonomi, null, 2));
-}
+veriYukle();
+
+function veriKaydet(dosya, veri) { fs.writeFileSync(dosya, JSON.stringify(veri, null, 2)); }
 function profilGetir(userId) {
-    if (!ekonomi[userId]) {
-        ekonomi[userId] = { bakiye: 1000, envanter: [], sonGunluk: 0 };
-    }
+    if (!ekonomi[userId]) ekonomi[userId] = { bakiye: 1000, envanter: [], sonGunluk: 0, mesaj: 0 };
     return ekonomi[userId];
 }
 
-let kartlar = [];
-if (fs.existsSync(KARTLAR_FILE)) {
-    try { kartlar = JSON.parse(fs.readFileSync(KARTLAR_FILE, 'utf8')); } catch (e) { kartlar = []; }
-}
-
-// --- HAFTALIK SIRALAMA HESAPLAMA MOTORU ---
+// --- PARTNER & HAFTALIK SIRALAMA ---
 function haftalikSiralamaBul(userId) {
-    const siralanmis = Object.entries(partners)
-        .sort((a, b) => (b[1].hafta || 0) - (a[1].hafta || 0));
+    const siralanmis = Object.entries(partners).sort((a, b) => (b[1].hafta || 0) - (a[1].hafta || 0));
     const index = siralanmis.findIndex(item => item[0] === userId);
     return index !== -1 ? index + 1 : 1;
 }
 
-// --- BİREBİR FOTOĞRAFTAKİ PARTNER EMBED TASARIMI (SAĞ ÜST SUNUCU LOGOLU) ---
 function createPartnerEmbed(user, data, guild) {
     const siralama = haftalikSiralamaBul(user.id);
-    
-    // Sunucu simgesini v14 ile tam uyumlu çeker, yoksa profil resmine düşer
-    const serverIcon = (guild && guild.iconURL()) 
-        ? guild.iconURL({ size: 512 }) 
-        : user.displayAvatarURL({ size: 512 });
+    const serverIcon = (guild && guild.iconURL()) ? guild.iconURL({ size: 512 }) : user.displayAvatarURL({ size: 512 });
 
-    const embed = new EmbedBuilder()
+    return new EmbedBuilder()
         .setColor('#5865F2')
-        .setAuthor({ 
-            name: user.username, 
-            iconURL: user.displayAvatarURL() 
-        })
+        .setAuthor({ name: user.username, iconURL: user.displayAvatarURL() })
         .setTitle('Partnerlik Profili')
-        .setDescription(
-            `**Bugünlük Partnerin:** ${data.bugun || 0}\n` +
-            `**Haftalık Partnerin:** ${data.hafta || 0}\n` +
-            `**Aylık Partnerin:** ${data.ay || 0}\n` +
-            `**Toplam Partnerin:** ${data.toplam || 0}\n` +
-            `**Haftalık Sıralaman:** #${siralama}`
-        )
-        .setThumbnail(serverIcon) // Sağ üstteki kare alana artık sunucu ikonu gelir
+        .setDescription(`**Bugünlük Partnerin:** ${data.bugun || 0}\n**Haftalık Partnerin:** ${data.hafta || 0}\n**Aylık Partnerin:** ${data.ay || 0}\n**Toplam Partnerin:** ${data.toplam || 0}\n**Haftalık Sıralaman:** #${siralama}`)
+        .setThumbnail(serverIcon)
         .setImage('https://i.postimg.cc/PqJ78dP6/c84c6583-884f-46c2-ba81-933db6aaeff8.png')
         .setTimestamp();
-
-    return embed;
 }
 
-// --- DENGELİ KART SEÇİMİ & MARKET ---
-function rastgeleKartSec() {
-    if (kartlar.length === 0) return null;
-    const efsaneviler = kartlar.filter(k => k.sinif && (k.sinif.toLowerCase().includes('efsanevi') || k.sinif.toLowerCase().includes('legendary')));
-    const nadirler = kartlar.filter(k => k.sinif && (k.sinif.toLowerCase().includes('nadir') || k.sinif.toLowerCase().includes('rare')));
-    const normaller = kartlar.filter(k => !efsaneviler.includes(k) && !nadirler.includes(k));
-
-    const sans = Math.random() * 100;
-    if (sans < 60 && normaller.length > 0) return normaller[Math.floor(Math.random() * normaller.length)];
-    else if (sans < 90 && nadirler.length > 0) return nadirler[Math.floor(Math.random() * nadirler.length)];
-    else if (efsaneviler.length > 0) return efsaneviler[Math.floor(Math.random() * efsaneviler.length)];
-
-    return kartlar[Math.floor(Math.random() * kartlar.length)];
-}
-
-let marketKartlari = [];
-function marketiYenile() {
-    if (kartlar.length === 0) return;
-    marketKartlari = [];
-    for (let i = 0; i < 3; i++) {
-        const rastgele = rastgeleKartSec();
-        if (!rastgele) continue;
-        let fiyat = 500;
-        const sinifKucuk = (rastgele.sinif || "").toLowerCase();
-        if (sinifKucuk.includes('efsanevi') || sinifKucuk.includes('legendary')) fiyat = 4000;
-        else if (sinifKucuk.includes('nadir') || sinifKucuk.includes('rare')) fiyat = 1500;
-        else fiyat = 500;
-        marketKartlari.push({ ...rastgele, fiyat });
-    }
-}
-setInterval(marketiYenile, 3 * 60 * 60 * 1000);
-marketiYenile();
-
-// --- Kapsamlı Yardım Menüsü ---
+// --- KAPSAMLI YARDIM MENÜSÜ ---
 function yardimMenusuOlustur(username) {
     const embed = new EmbedBuilder()
         .setColor('#2F3136')
-        .setTitle('🛡️ Kastuhino Bot — Kapsamlı Yardım & Kontrol Paneli')
-        .setDescription(
-            `Merhaba **${username}**, Kastuhino Bot komut rehberine hoş geldin.\n\n` +
-            `🔹 **Bot Ön Eki (Prefix):** \`${PREFIX}\` veya \`/\`\n\n` +
-            `Aşağıdaki açılır menüyü kullanarak kategoriler arasında geçiş yapabilirsiniz.\n\n` +
-            `📂 **Kategoriler:**\n` +
-            `• 🔨 **Moderasyon:** Ban, mute, rol, uyarı ve jüri yargılama sistemi\n` +
-            `• 🔒 **Kanal Yönetimi:** Kanal kilitleme ve genel bakım modu\n` +
-            `• ⚙️ **Sunucu Ayarları:** Denetim masası, tag, otorol, log ve bilet ayarları\n` +
-            `• 🌐 **Genel & Sistemler:** Ses bağlantısı, çekiliş, oylama, davet ve AFK\n` +
-            `• 💰 **Ekonomi & Eğlence:** Bakiye, gacha ve kart koleksiyon sistemi`
-        );
+        .setTitle('🛡️ Kastuhino Bot — Kontrol Paneli')
+        .setDescription(`Merhaba **${username}**, komut rehberine hoş geldin. Menüden kategori seçebilirsin.\n\n📂 **Kategoriler:**\n🐱 Eğlence\n🛎️ Kullanıcı\n🛠️ Otomatik Mod\n💰 Ekonomi\n🔨 Moderasyon`);
 
     const row = new ActionRowBuilder().addComponents(
         new StringSelectMenuBuilder()
             .setCustomId('yardim_menu')
-            .setPlaceholder('Kategori seçmek için buraya tıklayın...')
+            .setPlaceholder('Kategori seçmek için tıkla...')
             .addOptions([
-                { label: 'Ana Sayfa', description: 'Yardım panelinin ana ekranına döner.', value: 'ana_sayfa', emoji: '🏠' },
-                { label: 'Moderasyon', description: 'Ban, mute, rol, uyarı ve jüri yargılama komutları.', value: 'mod_menu', emoji: '🔨' },
-                { label: 'Kanal Yönetimi', description: 'Kanal kilitleme ve bakım modu komutları.', value: 'kanal_menu', emoji: '🔒' },
-                { label: 'Sunucu Ayarları', description: 'Denetim masası, tag, otorol, log ve bilet ayarları.', value: 'sunucu_ayar_menu', emoji: '⚙️' },
-                { label: 'Genel & Sistemler', description: 'Ses, çekiliş, oylama, davet, ticket ve AFK sistemleri.', value: 'genel_menu', emoji: '🌐' },
-                { label: 'Ekonomi & Eğlence', description: 'Bakiye, market, gacha ve anime kartları.', value: 'ekonomi_menu', emoji: '💰' }
+                { label: 'Ana Sayfa', value: 'ana_sayfa', emoji: '🏠' },
+                { label: 'Eğlence', value: 'eglence_menu', emoji: '🐱' },
+                { label: 'Kullanıcı', value: 'kullanici_menu', emoji: '🛎️' },
+                { label: 'Otomatik Mod', value: 'automod_menu', emoji: '🛠️' },
+                { label: 'Ekonomi & Kart', value: 'ekonomi_menu', emoji: '💰' },
+                { label: 'Moderasyon', value: 'mod_menu', emoji: '🔨' }
             ])
     );
     return { embeds: [embed], components: [row] };
 }
 
-// --- SLASH KOMUTLARI ---
-client.once('ready', async () => {
-    console.log(`[✓] ${client.user.tag} aktif ve operasyonel!`);
-    const commands = [
-        new SlashCommandBuilder().setName('yardim').setDescription('Yardım panelini açar.'),
-        new SlashCommandBuilder().setName('bakiye').setDescription('Cüzdanındaki Anime Cash miktarını gösterir.'),
-        new SlashCommandBuilder().setName('gunluk').setDescription('Günlük Anime Cash ödülünü alırsın.'),
-        new SlashCommandBuilder().setName('market').setDescription('Kart marketini gösterir.'),
-        new SlashCommandBuilder().setName('kart-al').setDescription('Marketten kart satın alır.').addIntegerOption(o => o.setName('no').setDescription('Market sırası (1-3)').setRequired(true)),
-        new SlashCommandBuilder().setName('envanter').setDescription('Sahip olduğun kartları listeler.'),
-        new SlashCommandBuilder().setName('gacha').setDescription('Şansına kart düşürür (300 Cash).'),
-        new SlashCommandBuilder().setName('kart-bilgi').setDescription('Veritabanındaki kartları listeler.'),
-        new SlashCommandBuilder().setName('partner-durum').setDescription('Partnerlik profili kartınızı gösterir.'),
-        new SlashCommandBuilder().setName('sil').setDescription('Mesaj temizler.').setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages).addIntegerOption(opt => opt.setName('miktar').setDescription('Miktar').setRequired(true))
-    ].map(command => command.toJSON());
-
-    try {
-        await client.application.commands.set(commands);
-        console.log('✨ Slash komutları senkronize edildi.');
-    } catch (e) { console.error('Slash yükleme hatası:', e); }
+client.once('ready', () => {
+    console.log(`[✓] ${client.user.tag} Tüm Sistemleriyle Aktif!`);
 });
 
-// --- YARDIMCI DİNAMİK YANIT SİSTEMİ ---
-async function dinamikYanit(ctx, payload, editMsg = null) {
-    const isSlash = !!ctx.commandName;
-    if (editMsg) {
-        return isSlash ? await ctx.editReply(payload) : await editMsg.edit(payload);
-    }
-    return isSlash ? await ctx.reply(payload) : await ctx.reply(payload);
-}
-
-// --- KOMUT İŞLEME MERKEZİ ---
-async function komutIsle(isim, ctx, args = []) {
-    const isSlash = !!ctx.commandName;
-    const user = isSlash ? ctx.user : ctx.author;
-    const guild = ctx.guild;
-    const userProfil = profilGetir(user.id);
-
-    if (!partners[user.id]) {
-        partners[user.id] = { bugun: 0, hafta: 0, ay: 0, toplam: 0 };
-    }
-
-    if (isim === 'yardim') return dinamikYanit(ctx, yardimMenusuOlustur(user.username));
-
-    if (isim === 'bakiye') {
-        const embed = new EmbedBuilder().setColor('#F1C40F').setTitle('💰 Cüzdan Durumu').setDescription(`${user}, cüzdanında **${userProfil.bakiye} Anime Cash** var!`);
-        return dinamikYanit(ctx, { embeds: [embed] });
-    }
-
-    if (isim === 'gunluk') {
-        const simdi = Date.now();
-        if (userProfil.sonGunluk && (simdi - userProfil.sonGunluk < 86400000)) {
-            return dinamikYanit(ctx, { content: '⏳ Günlük ödülünü zaten aldın! Tekrar almak için 24 saat beklemen gerekiyor.', ephemeral: true });
-        }
-        userProfil.bakiye += 1000;
-        userProfil.sonGunluk = simdi;
-        ekonomiKaydet();
-        const embed = new EmbedBuilder().setColor('#2ECC71').setTitle('🎁 Günlük Ödül').setDescription(`${user}, günlük **1000 Anime Cash** ödülün eklendi!`);
-        return dinamikYanit(ctx, { embeds: [embed] });
-    }
-
-    if (isim === 'market') {
-        if (marketKartlari.length === 0) return dinamikYanit(ctx, { content: "🛒 Markette şu an aktif kart yok." });
-        const embed = new EmbedBuilder().setColor('#9B59B6').setTitle('🛒 Kastuhino Kart Marketi').setDescription(`Satıştaki kartlar (\`${PREFIX}al <1-3>\`):`);
-        marketKartlari.forEach((k, idx) => {
-            embed.addFields({ name: `${idx + 1}. ${k.isim} (${k.sinif || 'Standart'})`, value: `Fiyat: **${k.fiyat} Cash**\n[Görsel](${k.gorsel_link})`, inline: false });
-        });
-        return dinamikYanit(ctx, { embeds: [embed] });
-    }
-
-    if (isim === 'kart-al') {
-        const secim = parseInt(args[0]) - 1;
-        if (isNaN(secim) || secim < 0 || secim >= marketKartlari.length) return dinamikYanit(ctx, { content: `⚠️ Geçerli bir sıra belirt! Örnek: \`${PREFIX}al 1\`` });
-        const alinacak = marketKartlari[secim];
-        if (userProfil.bakiye < alinacak.fiyat) return dinamikYanit(ctx, { content: `⚠️ Yeterli paran yok! Gereken: **${alinacak.fiyat}**` });
-
-        userProfil.bakiye -= alinacak.fiyat;
-        userProfil.envanter.push(alinacak);
-        ekonomiKaydet();
-
-        const embed = new EmbedBuilder().setColor('#2ECC71').setTitle('🎉 Satın Alındı!').setDescription(`${user}, **${alinacak.isim}** kartını aldın!`);
-        return dinamikYanit(ctx, { embeds: [embed] });
-    }
-
-    if (isim === 'envanter') {
-        if (userProfil.envanter.length === 0) return dinamikYanit(ctx, { content: "🎒 Envanterin boş." });
-        const embed = new EmbedBuilder().setColor('#3498DB').setTitle(`🎒 ${user.username} - Envanter`);
-        userProfil.envanter.forEach((k, idx) => {
-            embed.addFields({ name: `${idx + 1}. ${k.isim}`, value: `Sınıf: ${k.sinif || 'Standart'}`, inline: true });
-        });
-        return dinamikYanit(ctx, { embeds: [embed] });
-    }
-
-    // --- BÜYÜLÜ ANİMASYONLU GACHA KART ÇEKİMİ ---
-    if (isim === 'gacha') {
-        if (userProfil.bakiye < 300) return dinamikYanit(ctx, { content: "⚠️ 300 Cash gerekiyor!" });
-        userProfil.bakiye -= 300;
-        const secilen = rastgeleKartSec();
-        if (!secilen) return dinamikYanit(ctx, { content: "⚠️ Veritabanında kart yok." });
-
-        userProfil.envanter.push(secilen);
-        ekonomiKaydet();
-
-        const animEmbed = new EmbedBuilder()
-            .setColor('#2F3136')
-            .setTitle('🔮 Büyülü Mühür Kırılıyor...')
-            .setImage('https://i.makeagif.com/media/9-28-2015/0R3bJ9.gif');
-        
-        const beklemeMesaji = await dinamikYanit(ctx, { embeds: [animEmbed], fetchReply: true });
-
-        await new Promise(r => setTimeout(r, 2200));
-
-        const sinif = (secilen.sinif || 'Standart').toLowerCase();
-        let renk = '#3498DB', rozet = '⚔️ STANDART';
-        if (sinif.includes('efsanevi')) { renk = '#FFD700'; rozet = '🌟 EFSANEVİ'; }
-        else if (sinif.includes('nadir')) { renk = '#9B59B6'; rozet = '💎 NADİR'; }
-
-        const finalEmbed = new EmbedBuilder()
-            .setColor(renk)
-            .setAuthor({ name: '✨ KART ÇEKİMİ BAŞARILI ✨', iconURL: user.displayAvatarURL() })
-            .setTitle(`${rozet} — ${secilen.isim}`)
-            .setDescription(`**Sınıfı / Nadirliği:** ${secilen.sinif || 'Standart'}\n\nKastuhino Koleksiyon Seti'nden yeni bir kart çıkardın!`)
-            .setImage(secilen.gorsel_link)
-            .setFooter({ 
-                text: `${user.username} tarafından çekildi`, 
-                iconURL: user.displayAvatarURL() 
-            });
-
-        const btnRow = new ActionRowBuilder().addComponents(
-            new ButtonBuilder().setCustomId('gacha_tekrar').setLabel('Tekrar Çek (300)').setStyle(ButtonStyle.Success).setEmoji('🎲'),
-            new ButtonBuilder().setCustomId('envanter_bak').setLabel('Envanterim').setStyle(ButtonStyle.Secondary).setEmoji('🎒')
-        );
-
-        return dinamikYanit(ctx, { embeds: [finalEmbed], components: [btnRow] }, beklemeMesaji);
-    }
-
-    if (isim === 'kart-bilgi') {
-        if (kartlar.length === 0) return dinamikYanit(ctx, { content: "⚠️ Veritabanında kart yok." });
-        const embed = new EmbedBuilder().setColor('#F1C40F').setTitle('🃏 Tüm Kartlar');
-        kartlar.forEach((k, i) => embed.addFields({ name: `${i + 1}. ${k.isim}`, value: `Sınıf: ${k.sinif || 'Standart'}`, inline: false }));
-        return dinamikYanit(ctx, { embeds: [embed] });
-    }
-
-    if (isim === 'partner-durum') {
-        const partnerEmbed = createPartnerEmbed(user, partners[user.id], guild);
-        return dinamikYanit(ctx, { embeds: [partnerEmbed] });
-    }
-}
-
-// --- ETKİLEŞİM YÖNETİMİ ---
 client.on('interactionCreate', async interaction => {
-    if (interaction.isButton()) {
-        if (interaction.customId === 'gacha_tekrar') {
-            return komutIsle('gacha', interaction);
-        }
-        if (interaction.customId === 'envanter_bak') {
-            return komutIsle('envanter', interaction);
-        }
-    }
+    if (!interaction.isStringSelectMenu() || interaction.customId !== 'yardim_menu') return;
+    const secim = interaction.values[0];
+    const resEmbed = new EmbedBuilder().setColor('#3498DB').setTimestamp();
 
-    if (interaction.isStringSelectMenu() && interaction.customId === 'yardim_menu') {
-        const secim = interaction.values[0];
+    if (secim === 'ana_sayfa') return interaction.update(yardimMenusuOlustur(interaction.user.username));
+    
+    if (secim === 'eglence_menu') resEmbed.setTitle('🐱 Eğlence Komutları').setDescription(`• \`${PREFIX}1vs1 @üye\` - Düello atarsınız.\n• \`${PREFIX}ship @üye\` - Aşk ölçer.\n• \`${PREFIX}fakemesaj @üye <metin>\` - Başkasıymış gibi mesaj atar.\n• \`${PREFIX}fast\` - Hızlı yazma yarışı.`);
+    else if (secim === 'kullanici_menu') resEmbed.setTitle('🛎️ Kullanıcı Komutları').setDescription(`• \`${PREFIX}afk <sebep>\` - AFK moduna geçersiniz.\n• \`${PREFIX}avatar [@üye]\` - Profil fotosunu büyütür.\n• \`${PREFIX}kullanıcıbilgi [@üye]\` - Detaylı bilgi verir.\n• \`${PREFIX}sunucubilgi\` - Sunucu istatistikleri.`);
+    else if (secim === 'automod_menu') resEmbed.setTitle('🛠️ Otomatik Mod (Sadece Admin)').setDescription(`• \`${PREFIX}reklamengel\` - Aç/Kapat\n• \`${PREFIX}küfürengel\` - Aç/Kapat\n• \`${PREFIX}linkengel\` - Aç/Kapat\n• \`${PREFIX}capsengel\` - Aç/Kapat`);
+    else if (secim === 'ekonomi_menu') resEmbed.setTitle('💰 Ekonomi').setDescription(`• \`${PREFIX}bakiye\` • \`${PREFIX}gunluk\` • \`${PREFIX}market\` • \`${PREFIX}al [1-3]\` • \`${PREFIX}envanter\` • \`${PREFIX}gacha\``);
+    else if (secim === 'mod_menu') resEmbed.setTitle('🔨 Moderasyon').setDescription(`• \`${PREFIX}ban\` • \`${PREFIX}kick\` • \`${PREFIX}mute\` • \`${PREFIX}sil\``);
 
-        if (secim === 'ana_sayfa') {
-            return interaction.update(yardimMenusuOlustur(interaction.user.username));
-        }
-
-        const resEmbed = new EmbedBuilder().setColor('#3498DB').setTimestamp();
-
-        if (secim === 'mod_menu') {
-            resEmbed.setTitle('🔨 Moderasyon Komutları').setDescription(`• \`${PREFIX}ban @üye [sebep]\` - Yasaklar\n• \`${PREFIX}kick @üye [sebep]\` - Atar\n• \`${PREFIX}mute @üye [dakika]\` - Susturur\n• \`${PREFIX}sil [1-100]\` - Mesaj siler\n• \`${PREFIX}uyar\` / \`${PREFIX}sicil\` - Uyarı sistemleri`);
-        } else if (secim === 'kanal_menu') {
-            resEmbed.setTitle('🔒 Kanal Yönetimi Komutları').setDescription(`• \`${PREFIX}lock\` - Kanalı kapatır\n• \`${PREFIX}unlock\` - Kanalı açar\n• \`${PREFIX}bakım aç <süre>\` - Bakım modu`);
-        } else if (secim === 'sunucu_ayar_menu') {
-            resEmbed.setTitle('⚙️ Sunucu Ayarları Komutları').setDescription(`• \`${PREFIX}tagayar <tag>\` - Tag ayarlar\n• \`${PREFIX}otorol ayarla @rol\` - Otorol\n• \`${PREFIX}logayar\` - Log kanalı`);
-        } else if (secim === 'genel_menu') {
-            resEmbed.setTitle('🌐 Genel Komutlar & Sistemler').setDescription(`• \`${PREFIX}çekiliş\` • \`${PREFIX}oylama\` • \`${PREFIX}davet\` • \`${PREFIX}afk\``);
-        } else if (secim === 'ekonomi_menu') {
-            resEmbed.setTitle('💰 Ekonomi & Eğlence').setDescription(`• \`${PREFIX}bakiye\` • \`${PREFIX}gunluk\` • \`${PREFIX}market\` • \`${PREFIX}al [1-3]\` • \`${PREFIX}envanter\` • \`${PREFIX}gacha\``);
-        }
-
-        return interaction.update({ embeds: [resEmbed], components: interaction.message.components });
-    }
-
-    if (!interaction.isChatInputCommand()) return;
-    const { commandName } = interaction;
-
-    if (commandName === 'sil') {
-        const miktar = interaction.options.getInteger('miktar');
-        await interaction.channel.bulkDelete(miktar, true).catch(() => {});
-        return interaction.reply({ content: `✅ **${miktar}** mesaj silindi!`, ephemeral: true });
-    }
-
-    let arg = null;
-    if (commandName === 'kart-al') arg = interaction.options.getInteger('no');
-
-    await komutIsle(commandName, interaction, [arg]);
+    return interaction.update({ embeds: [resEmbed], components: interaction.message.components });
 });
 
-// --- MESAJLAR VE OTOMATİK PARTNER SAYAÇ ---
+// --- ANA MESAJ DİNLEYİCİSİ (OTOMATİK MOD & AFK BURADA) ---
 client.on('messageCreate', async message => {
     if (message.author.bot || !message.guild) return;
 
-    if (!partners[message.author.id]) {
-        partners[message.author.id] = { bugun: 0, hafta: 0, ay: 0, toplam: 0 };
+    // 1. AFK SİSTEMİ KONTROLÜ
+    if (afkVeri[message.author.id]) {
+        delete afkVeri[message.author.id];
+        veriKaydet(AFK_FILE, afkVeri);
+        message.reply(`👋 Hoş geldin! AFK modundan çıktın.`).then(m => setTimeout(() => m.delete(), 5000));
+    }
+    message.mentions.users.forEach(u => {
+        if (afkVeri[u.id]) {
+            message.reply(`💤 **${u.username}** şu an AFK. Sebep: *${afkVeri[u.id]}*`);
+        }
+    });
+
+    // 2. OTOMATİK MOD FİLTRELERİ (Adminler Hariç)
+    if (!message.member.permissions.has(PermissionFlagsBits.Administrator)) {
+        const text = message.content.toLowerCase();
+        
+        // Küfür Filtresi
+        const kufurler = ['amk', 'aq', 'sik', 'piç', 'orospu', 'yarak', 'yarrak'];
+        if (ayarlar.kufurEngel && kufurler.some(k => text.includes(k))) {
+            await message.delete().catch(() => {});
+            return message.channel.send(`⚠️ ${message.author}, bu sunucuda küfür edemezsin!`).then(m => setTimeout(() => m.delete(), 3000));
+        }
+
+        // Reklam Filtresi (Discord Invite)
+        if (ayarlar.reklamEngel && (text.includes('discord.gg/') || text.includes('discord.com/invite/'))) {
+            if (message.channel.id !== PARTNER_KANAL_ID) { // Partner kanalı hariç
+                await message.delete().catch(() => {});
+                return message.channel.send(`🛡️ ${message.author}, reklam yapmak yasak!`).then(m => setTimeout(() => m.delete(), 3000));
+            }
+        }
+
+        // Link Filtresi
+        if (ayarlar.linkEngel && (text.includes('http://') || text.includes('https://') || text.includes('.com'))) {
+            if (message.channel.id !== PARTNER_KANAL_ID) {
+                await message.delete().catch(() => {});
+                return message.channel.send(`🔗 ${message.author}, link paylaşımı kapalı!`).then(m => setTimeout(() => m.delete(), 3000));
+            }
+        }
+
+        // Capslock Engeli
+        if (ayarlar.capsEngel && message.content.length > 5) {
+            const letters = message.content.replace(/[^a-zA-ZğüşıöçĞÜŞİÖÇ]/g, '');
+            if (letters.length > 0 && (letters.match(/[A-ZĞÜŞİÖÇ]/g) || []).length / letters.length > 0.7) {
+                await message.delete().catch(() => {});
+                return message.channel.send(`🅰️ ${message.author}, lütfen çok fazla büyük harf kullanma!`).then(m => setTimeout(() => m.delete(), 3000));
+            }
+        }
     }
 
-    // OTOMATİK PARTNER SAYAÇ (Karesel alanda doğrudan Sunucu Simgesini gösterir)
+    // 3. PARTNER SİSTEMİ & XP
+    if (!partners[message.author.id]) partners[message.author.id] = { bugun: 0, hafta: 0, ay: 0, toplam: 0 };
     if (message.channel.id === PARTNER_KANAL_ID) {
-        const text = message.content.toLowerCase();
-        if (text.includes('https://discord.gg') || text.includes('discord.gg/')) {
+        if (message.content.includes('discord.gg/') || message.content.includes('https://')) {
             partners[message.author.id].bugun += 1;
             partners[message.author.id].hafta += 1;
             partners[message.author.id].ay += 1;
             partners[message.author.id].toplam += 1;
-            savePartners();
-
-            const embed = createPartnerEmbed(message.author, partners[message.author.id], message.guild);
-            return message.reply({ content: '✅ Partnerlik sayıldı!', embeds: [embed] });
+            veriKaydet(PARTNER_FILE, partners);
+            return message.reply({ content: '✅ Partnerlik sayıldı!', embeds: [createPartnerEmbed(message.author, partners[message.author.id], message.guild)] });
         }
     }
 
-    // MODERASYON PREFIX KOMUTLARI (k!)
-    if (message.content.startsWith(`${PREFIX}mute`) || message.content.startsWith(`${PREFIX}sustur`)) {
-        if (!message.member.permissions.has(PermissionFlagsBits.ModerateMembers)) return message.reply('⚠️ Yetkin yok.');
-        const target = message.mentions.members.first();
-        if (!target) return message.reply('⚠️ Üye etiketle!');
-        await target.timeout(10 * 60 * 1000, `${PREFIX}mute`).catch(() => {});
-        return message.reply(`✅ **${target.user.tag}** susturuldu.`);
+    // 4. KOMUT YÖNETİMİ
+    if (!message.content.startsWith(PREFIX)) return;
+    const args = message.content.slice(PREFIX.length).trim().split(/ +/);
+    const cmd = args.shift().toLowerCase();
+    const etiketlenen = message.mentions.members.first();
+
+    // --- OTOMATİK MOD KOMUTLARI ---
+    if (['reklamengel', 'küfürengel', 'linkengel', 'capsengel'].includes(cmd)) {
+        if (!message.member.permissions.has(PermissionFlagsBits.Administrator)) return message.reply("⚠️ Yetkin yok!");
+        const ayarAdi = cmd.replace('ü', 'u').replace('engel', 'Engel'); // kufurEngel, reklamEngel vb.
+        ayarlar[ayarAdi] = !ayarlar[ayarAdi];
+        veriKaydet(AYARLAR_FILE, ayarlar);
+        return message.reply(`🛠️ ${cmd} başarıyla **${ayarlar[ayarAdi] ? 'Açıldı ✅' : 'Kapatıldı ❌'}**`);
     }
 
-    if (message.content.startsWith(`${PREFIX}kick`)) {
-        if (!message.member.permissions.has(PermissionFlagsBits.KickMembers)) return message.reply('⚠️ Yetkin yok.');
-        const target = message.mentions.members.first();
-        if (!target) return message.reply('⚠️ Üye etiketle!');
-        await target.kick().catch(() => {});
-        return message.reply(`✅ **${target.user.tag}** atıldı.`);
+    // --- KULLANICI KOMUTLARI ---
+    if (cmd === 'afk') {
+        const sebep = args.join(' ') || 'Şu an buralarda değilim.';
+        afkVeri[message.author.id] = sebep;
+        veriKaydet(AFK_FILE, afkVeri);
+        return message.reply(`💤 AFK moduna geçtin. Sebep: **${sebep}**`);
     }
 
-    if (message.content.startsWith(`${PREFIX}ban`)) {
-        if (!message.member.permissions.has(PermissionFlagsBits.BanMembers)) return message.reply('⚠️ Yetkin yok.');
-        const target = message.mentions.members.first();
-        if (!target) return message.reply('⚠️ Üye etiketle!');
-        await target.ban().catch(() => {});
-        return message.reply(`✅ **${target.user.tag}** yasaklandı.`);
+    if (cmd === 'avatar') {
+        const user = etiketlenen ? etiketlenen.user : message.author;
+        const embed = new EmbedBuilder().setColor('#9B59B6').setTitle(`${user.username} Avatarı`).setImage(user.displayAvatarURL({ dynamic: true, size: 1024 }));
+        return message.reply({ embeds: [embed] });
     }
 
-    if (message.content.startsWith(`${PREFIX}sil`)) {
+    if (cmd === 'kullanıcıbilgi' || cmd === 'kullanicibilgi') {
+        const member = etiketlenen || message.member;
+        const embed = new EmbedBuilder()
+            .setColor('#3498DB')
+            .setThumbnail(member.user.displayAvatarURL({ dynamic: true }))
+            .setTitle(`👤 ${member.user.tag} Profili`)
+            .addFields(
+                { name: 'Kayıt Tarihi', value: `<t:${Math.floor(member.user.createdTimestamp / 1000)}:R>`, inline: true },
+                { name: 'Sunucuya Katılım', value: `<t:${Math.floor(member.joinedTimestamp / 1000)}:R>`, inline: true },
+                { name: 'Roller', value: member.roles.cache.filter(r => r.name !== '@everyone').map(r => r.toString()).join(' ') || 'Rolü yok' }
+            );
+        return message.reply({ embeds: [embed] });
+    }
+
+    if (cmd === 'sunucubilgi') {
+        const embed = new EmbedBuilder()
+            .setColor('#F1C40F')
+            .setThumbnail(message.guild.iconURL({ dynamic: true }))
+            .setTitle(`🌐 ${message.guild.name} İstatistikleri`)
+            .addFields(
+                { name: '👑 Sahip', value: `<@${message.guild.ownerId}>`, inline: true },
+                { name: '👥 Üye Sayısı', value: `${message.guild.memberCount}`, inline: true },
+                { name: '📅 Kuruluş', value: `<t:${Math.floor(message.guild.createdTimestamp / 1000)}:R>`, inline: false }
+            );
+        return message.reply({ embeds: [embed] });
+    }
+
+    // --- EĞLENCE KOMUTLARI ---
+    if (cmd === 'ship') {
+        if (!etiketlenen) return message.reply("💕 Kimi shiplemek istiyorsun? Birini etiketle!");
+        const askYuzdesi = Math.floor(Math.random() * 101);
+        let kalp = askYuzdesi > 80 ? '💖💖💖' : askYuzdesi > 50 ? '💘💘' : askYuzdesi > 20 ? '💔' : '🖤';
+        const embed = new EmbedBuilder().setColor('#E74C3C').setTitle('💕 Aşk Ölçer').setDescription(`**${message.author.username}** ile **${etiketlenen.user.username}** arasındaki aşk:\n\n**%${askYuzdesi}** ${kalp}`);
+        return message.reply({ embeds: [embed] });
+    }
+
+    if (cmd === '1vs1') {
+        if (!etiketlenen) return message.reply("⚔️ Savaşmak için birini etiketle!");
+        if (etiketlenen.id === message.author.id) return message.reply("Kendinle savaşamazsın!");
+        const guc1 = Math.floor(Math.random() * 100);
+        const guc2 = Math.floor(Math.random() * 100);
+        const kazanan = guc1 > guc2 ? message.author : (guc2 > guc1 ? etiketlenen.user : 'Berabere!');
+        const embed = new EmbedBuilder()
+            .setColor('#E67E22')
+            .setTitle('⚔️ Destansı Düello!')
+            .setDescription(`**${message.author.username}** Gücü: ${guc1} 🗡️\n**${etiketlenen.user.username}** Gücü: ${guc2} 🛡️\n\n🏆 **Sonuç:** ${kazanan === 'Berabere!' ? 'Berabere!' : `${kazanan.username} paramparça etti!`}`);
+        return message.reply({ embeds: [embed] });
+    }
+
+    if (cmd === 'fakemesaj') {
+        if (!etiketlenen) return message.reply("👤 Birini etiketle!");
+        const metin = args.slice(1).join(' ');
+        if (!metin) return message.reply("📝 Söyletmek istediğin mesajı yaz!");
+        await message.delete().catch(() => {});
+        
+        try {
+            const webhook = await message.channel.createWebhook({
+                name: etiketlenen.user.username,
+                avatar: etiketlenen.user.displayAvatarURL({ dynamic: true })
+            });
+            await webhook.send({ content: metin });
+            await webhook.delete();
+        } catch (e) {
+            message.channel.send("⚠️ Webhook oluşturma yetkim yok!");
+        }
+        return;
+    }
+
+    if (cmd === 'fast') {
+        const kelimeler = ['kastuhino', 'anime', 'manga', 'roblox', 'kılıç', 'gacha', 'efsanevi'];
+        const secilen = kelimeler[Math.floor(Math.random() * kelimeler.length)];
+        
+        await message.reply(`⌨️ **HIZLI YAZMA YARIŞI!**\nŞu kelimeyi ilk yazan kazanır: **${secilen}**\n*(Süreniz 15 saniye!)*`);
+        
+        const filter = m => m.content.toLowerCase() === secilen && !m.author.bot;
+        const collector = message.channel.createMessageCollector({ filter, time: 15000, max: 1 });
+
+        collector.on('collect', m => {
+            m.reply(`🏆 Tebrikler **${m.author.username}**, kelimeyi doğru ve en hızlı sen yazdın!`);
+        });
+        collector.on('end', collected => {
+            if (collected.size === 0) message.channel.send(`⏰ Süre doldu! Kimse **${secilen}** kelimesini yazamadı.`);
+        });
+        return;
+    }
+
+    // --- ESKİ KOMUTLAR (Yardım, Moderasyon vb.) ---
+    if (cmd === 'yardım' || cmd === 'yardim') return message.reply(yardimMenusuOlustur(message.author.username));
+    
+    if (cmd === 'sil') {
         if (!message.member.permissions.has(PermissionFlagsBits.ManageMessages)) return message.reply('⚠️ Yetkin yok.');
-        const args = message.content.split(/\s+/);
-        const miktar = parseInt(args[1]);
+        const miktar = parseInt(args[0]);
         if (isNaN(miktar) || miktar < 1 || miktar > 100) return message.reply('⚠️ 1 ile 100 arasında bir sayı belirt!');
         await message.channel.bulkDelete(miktar, true).catch(() => {});
-        return message.reply(`✅ **${miktar}** mesaj silindi!`).then(msg => setTimeout(() => msg.delete().catch(() => {}), 3000));
+        return message.channel.send(`✅ **${miktar}** mesaj silindi!`).then(m => setTimeout(() => m.delete(), 3000));
     }
-
-    if (!message.content.startsWith(PREFIX)) return;
-
-    const parts = message.content.slice(PREFIX.length).trim().split(/\s+/);
-    const cmd = parts[0].toLowerCase();
-    const arg1 = parts[1];
-
-    let islenen = cmd;
-    if (cmd === 'günlük') islenen = 'gunluk';
-    if (cmd === 'al') islenen = 'kart-al';
-    if (cmd === 'çek' || cmd === 'gacha' || (cmd === 'kart' && arg1 === 'çek')) islenen = 'gacha';
-    if (cmd === 'kart' && arg1 === 'bilgi') islenen = 'kart-bilgi';
-    if (cmd === 'partner' && arg1 === 'durum') islenen = 'partner-durum';
-    if (cmd === 'yardım') islenen = 'yardim';
-
-    await komutIsle(islenen, message, [arg1]);
 });
 
 client.login(process.env.DISCORD_TOKEN || process.env.TOKEN);
