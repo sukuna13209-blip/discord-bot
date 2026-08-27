@@ -78,7 +78,7 @@ function yardimMenusuOlustur(username) {
     const embed = new EmbedBuilder()
         .setColor('#2F3136')
         .setTitle('🛡️ Kastuhino Bot — Kontrol Paneli')
-        .setDescription(`Merhaba **${username}**, komut rehberine hoş geldin. Menüden kategori seçebilirsin.\n\n📂 **Kategoriler:**\n🐱 Eğlence\n🛎️ Kullanıcı\n🛠️ Otomatik Mod\n💰 Ekonomi\n🔨 Moderasyon`);
+        .setDescription(`Merhaba **${username}**, komut rehberine hoş geldin.\nAşağıdaki menüden incelemek istediğin kategoriyi seçebilirsin.\n\n📂 **Kategoriler:**\n🐱 Eğlence\n🛎️ Kullanıcı\n🛠️ Otomatik Mod\n💰 Ekonomi\n🔨 Moderasyon`);
 
     const row = new ActionRowBuilder().addComponents(
         new StringSelectMenuBuilder()
@@ -100,18 +100,56 @@ client.once('ready', () => {
     console.log(`[✓] ${client.user.tag} Tüm Sistemleriyle Aktif!`);
 });
 
+// --- MENÜ ETKİLEŞİMLERİ (YENİLENMİŞ GÖRÜNÜM) ---
 client.on('interactionCreate', async interaction => {
     if (!interaction.isStringSelectMenu() || interaction.customId !== 'yardim_menu') return;
     const secim = interaction.values[0];
-    const resEmbed = new EmbedBuilder().setColor('#3498DB').setTimestamp();
+    const resEmbed = new EmbedBuilder().setColor('#2B2D31').setTimestamp();
 
     if (secim === 'ana_sayfa') return interaction.update(yardimMenusuOlustur(interaction.user.username));
     
-    if (secim === 'eglence_menu') resEmbed.setTitle('🐱 Eğlence Komutları').setDescription(`• \`${PREFIX}1vs1 @üye\` - Düello atarsınız.\n• \`${PREFIX}ship @üye\` - Aşk ölçer.\n• \`${PREFIX}fakemesaj @üye <metin>\` - Başkasıymış gibi mesaj atar.\n• \`${PREFIX}fast\` - Hızlı yazma yarışı.`);
-    else if (secim === 'kullanici_menu') resEmbed.setTitle('🛎️ Kullanıcı Komutları').setDescription(`• \`${PREFIX}afk <sebep>\` - AFK moduna geçersiniz.\n• \`${PREFIX}avatar [@üye]\` - Profil fotosunu büyütür.\n• \`${PREFIX}kullanıcıbilgi [@üye]\` - Detaylı bilgi verir.\n• \`${PREFIX}sunucubilgi\` - Sunucu istatistikleri.`);
-    else if (secim === 'automod_menu') resEmbed.setTitle('🛠️ Otomatik Mod (Sadece Admin)').setDescription(`• \`${PREFIX}reklamengel\` - Aç/Kapat\n• \`${PREFIX}küfürengel\` - Aç/Kapat\n• \`${PREFIX}linkengel\` - Aç/Kapat\n• \`${PREFIX}capsengel\` - Aç/Kapat`);
-    else if (secim === 'ekonomi_menu') resEmbed.setTitle('💰 Ekonomi').setDescription(`• \`${PREFIX}bakiye\` • \`${PREFIX}gunluk\` • \`${PREFIX}market\` • \`${PREFIX}al [1-3]\` • \`${PREFIX}envanter\` • \`${PREFIX}gacha\``);
-    else if (secim === 'mod_menu') resEmbed.setTitle('🔨 Moderasyon').setDescription(`• \`${PREFIX}ban\` • \`${PREFIX}kick\` • \`${PREFIX}mute\` • \`${PREFIX}sil\``);
+    if (secim === 'eglence_menu') {
+        resEmbed.setTitle('🐱 Eğlence')
+        .setDescription('Eğlenceli ve keyifli komutlar\n\n' +
+        '`k!1vs1`\nBaşka biri ile düello atarsınız.\n\n' +
+        '`k!ship`\nBot sizi etiketlediğiniz kişiyle eşleştirir.\n\n' +
+        '`k!fakemesaj`\nBelirlediğiniz kişi için sahte mesaj gönderirsiniz.\n\n' +
+        '`k!fast`\nBelirlenen sürede verilen kelimeyi yazmaya çalışırsınız.');
+    } 
+    else if (secim === 'kullanici_menu') {
+        resEmbed.setTitle('🛎️ Kullanıcı')
+        .setDescription('Profil ve kullanıcı bilgileri\n\n' +
+        '`k!afk`\nBahsedildiğinizde yanıt verilmesi için bir AFK durumu ayarlar.\n\n' +
+        '`k!avatar`\nBelirttiğiniz kullanıcının avatarını gösterir.\n\n' +
+        '`k!kullanıcıbilgi`\nBelirtilen kullanıcı hakkında ayrıntılı bilgi verir.\n\n' +
+        '`k!sunucubilgi`\nBulunduğunuz sunucu hakkında genel istatistikleri gösterir.');
+    } 
+    else if (secim === 'automod_menu') {
+        resEmbed.setTitle('🛠️ Otomatik Mod')
+        .setDescription('Mesaj ihlallerini otomatik olarak algılar ve yönetir.\n\n' +
+        '`k!reklamengel`\nReklam ve davet linki içeren mesajları anında siler.\n\n' +
+        '`k!küfürengel`\nKüfür ve argo kelime içeren mesajları engeller.\n\n' +
+        '`k!linkengel`\nİzinsiz paylaşılan dış bağlantıları ve linkleri siler.\n\n' +
+        '`k!capsengel`\nBelirlenen büyük harf oranını aşan rahatsız edici mesajları siler.');
+    } 
+    else if (secim === 'ekonomi_menu') {
+        resEmbed.setTitle('💰 Ekonomi ve Gacha')
+        .setDescription('Sunucu içi ticaret, bakiye ve kart toplama sistemi\n\n' +
+        '`k!bakiye`\nCüzdanınızdaki mevcut Anime Cash miktarını gösterir.\n\n' +
+        '`k!gunluk`\nHer 24 saatte bir günlük Anime Cash ödülünüzü almanızı sağlar.\n\n' +
+        '`k!market`\nSatın alabileceğiniz, belirli aralıklarla yenilenen kartları listeler.\n\n' +
+        '`k!al [sıra]`\nMarketten belirttiğiniz sıradaki (1, 2 veya 3) kartı satın alır.\n\n' +
+        '`k!gacha`\n300 Cash karşılığında rastgele bir mühür kırıp kart çıkartırsınız.\n\n' +
+        '`k!envanter`\nSahip olduğunuz tüm özel koleksiyon kartlarını gösterir.');
+    } 
+    else if (secim === 'mod_menu') {
+        resEmbed.setTitle('🔨 Moderasyon')
+        .setDescription('Sunucu düzenini ve güvenliğini sağlamak için yönetim araçları\n\n' +
+        '`k!ban [@üye]`\nKural ihlali yapan üyeyi sunucudan kalıcı olarak uzaklaştırır.\n\n' +
+        '`k!kick [@üye]`\nBelirtilen üyeyi sunucudan atar (tekrar katılabilir).\n\n' +
+        '`k!mute [@üye]`\nBelirtilen üyeyi 10 dakika boyunca geçici olarak susturur.\n\n' +
+        '`k!sil [miktar]`\nBelirttiğiniz sayı kadar (1-100) mesajı sohbetten temizler.');
+    }
 
     return interaction.update({ embeds: [resEmbed], components: interaction.message.components });
 });
@@ -274,7 +312,7 @@ client.on('messageCreate', async message => {
             await webhook.send({ content: metin });
             await webhook.delete();
         } catch (e) {
-            message.channel.send("⚠️ Webhook oluşturma yetkim yok!");
+            message.channel.send("⚠️ Webhook oluşturma yetkim yok! (Manage Webhooks izni gerekiyor)");
         }
         return;
     }
@@ -297,7 +335,7 @@ client.on('messageCreate', async message => {
         return;
     }
 
-    // --- ESKİ KOMUTLAR (Yardım, Moderasyon vb.) ---
+    // --- YARDIM VE MODERASYON ---
     if (cmd === 'yardım' || cmd === 'yardim') return message.reply(yardimMenusuOlustur(message.author.username));
     
     if (cmd === 'sil') {
