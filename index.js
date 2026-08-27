@@ -34,17 +34,18 @@ const AFK_FILE = './afk.json';
 let partners = {};
 let ekonomi = {};
 
-// Eksiksiz ve Zenginleştirilmiş Anime Kart Arşivi
+// Kusursuz Karakter ve Görsel Arşivi
 let kartlar = [
-    { isim: "Monkey D. Luffy", sinif: "Efsanevi", gorsel_link: "https://i.imgur.com/8Q965aB.png" },
-    { isim: "Roronoa Zoro", sinif: "Nadir", gorsel_link: "https://i.imgur.com/8Q965aB.png" },
-    { isim: "Naruto Uzumaki", sinif: "Efsanevi", gorsel_link: "https://i.imgur.com/8Q965aB.png" },
-    { isim: "Namikaze Minato", sinif: "Efsanevi", gorsel_link: "https://i.imgur.com/8Q965aB.png" },
-    { isim: "Uchiha Itachi", sinif: "Standart", gorsel_link: "https://i.imgur.com/8Q965aB.png" },
-    { isim: "Ken Kaneki", sinif: "Efsanevi", gorsel_link: "https://i.imgur.com/8Q965aB.png" },
-    { isim: "Ichigo Kurosaki", sinif: "Nadir", gorsel_link: "https://i.imgur.com/8Q965aB.png" },
-    { isim: "Killua Zoldyck", sinif: "Nadir", gorsel_link: "https://i.imgur.com/8Q965aB.png" },
-    { isim: "Tanjiro Kamado", sinif: "Standart", gorsel_link: "https://i.imgur.com/8Q965aB.png" }
+    { isim: "Monkey D. Luffy", sinif: "Efsanevi", gorsel_link: "https://images.alphacoders.com/133/1331776.png" },
+    { isim: "Portgas D. Ace", sinif: "Efsanevi", gorsel_link: "https://images.alphacoders.com/112/1123306.png" },
+    { isim: "Roronoa Zoro", sinif: "Nadir", gorsel_link: "https://images.alphacoders.com/132/1325325.png" },
+    { isim: "Naruto Uzumaki", sinif: "Efsanevi", gorsel_link: "https://images.alphacoders.com/565/565217.png" },
+    { isim: "Namikaze Minato", sinif: "Efsanevi", gorsel_link: "https://images.alphacoders.com/133/1333678.png" },
+    { isim: "Uchiha Itachi", sinif: "Standart", gorsel_link: "https://images.alphacoders.com/797/797828.png" },
+    { isim: "Ken Kaneki", sinif: "Efsanevi", gorsel_link: "https://images.alphacoders.com/604/604470.png" },
+    { isim: "Ichigo Kurosaki", sinif: "Nadir", gorsel_link: "https://images.alphacoders.com/100/1008779.png" },
+    { isim: "Killua Zoldyck", sinif: "Nadir", gorsel_link: "https://images.alphacoders.com/133/1331821.png" },
+    { isim: "Tanjiro Kamado", sinif: "Standart", gorsel_link: "https://images.alphacoders.com/131/1315570.png" }
 ];
 
 let ayarlar = { kufurEngel: false, reklamEngel: false, linkEngel: false, capsEngel: false };
@@ -337,7 +338,44 @@ client.on('messageCreate', async message => {
         return await gachaCek(message, message.author);
     }
 
-    // DİĞER KOMUTLAR
+    // MODERASYON KOMUTLARI
+    if (cmd === 'sil') {
+        if (!message.member.permissions.has(PermissionFlagsBits.ManageMessages)) return message.reply("⚠️ Mesajları yönet yetkin yok!");
+        const miktar = parseInt(args[0]);
+        if (isNaN(miktar) || miktar < 1 || miktar > 100) return message.reply("⚠️ 1 ile 100 arasında bir sayı gir!");
+        await message.channel.bulkDelete(miktar, true).catch(() => {});
+        return message.channel.send(`✅ **${miktar}** mesaj silindi!`).then(m => setTimeout(() => m.delete(), 3000));
+    }
+
+    if (cmd === 'ban') {
+        if (!message.member.permissions.has(PermissionFlagsBits.BanMembers)) return message.reply("⚠️ Üyeleri yasakla yetkin yok!");
+        if (!etiketlenen) return message.reply("⚠️ Yasaklanacak üyeyi etiketlemelisin! Örn: \`${PREFIX}ban @üye\``);
+        if (!etiketlenen.bannable) return message.reply("⚠️ Bu üyeyi yasaklayamıyorum (Yetkim yetersiz olabilir).");
+        const sebep = args.slice(1).join(' ') || 'Belirtilmedi';
+        await etiketlenen.ban({ reason: sebep }).catch(() => {});
+        return message.reply(`🔨 **${etiketlenen.user.tag}** sunucudan yasaklandı! Sebep: *${sebep}*`);
+    }
+
+    if (cmd === 'kick') {
+        if (!message.member.permissions.has(PermissionFlagsBits.KickMembers)) return message.reply("⚠️ Üyeleri at yetkin yok!");
+        if (!etiketlenen) return message.reply("⚠️ Atılacak üyeyi etiketlemelisin! Örn: \`${PREFIX}kick @üye\``);
+        if (!etiketlenen.kickable) return message.reply("⚠️ Bu üyeyi atamıyorum (Yetkim yetersiz olabilir).");
+        const sebep = args.slice(1).join(' ') || 'Belirtilmedi';
+        await etiketlenen.kick(sebep).catch(() => {});
+        return message.reply(`👢 **${etiketlenen.user.tag}** sunucudan atıldı! Sebep: *${sebep}*`);
+    }
+
+    if (cmd === 'mute') {
+        if (!message.member.permissions.has(PermissionFlagsBits.ModerateMembers)) return message.reply("⚠️ Üyeleri zaman aşımına uğrat yetkin yok!");
+        if (!etiketlenen) return message.reply("⚠️ Susturulacak üyeyi etiketlemelisin! Örn: \`${PREFIX}mute @üye 10\``);
+        const dakika = parseInt(args[1]);
+        if (isNaN(dakika) || dakika < 1) return message.reply("⚠️ Geçerli bir süre (dakika cinsinden) belirtmelisin!");
+        const sebep = args.slice(2).join(' ') || 'Belirtilmedi';
+        await etiketlenen.timeout(dakika * 60 * 1000, sebep).catch(() => {});
+        return message.reply(`🔇 **${etiketlenen.user.tag}** ${dakika} dakika süreyle susturuldu! Sebep: *${sebep}*`);
+    }
+
+    // DİĞER EĞLENCE KOMUTLARI
     if (cmd === 'ship') {
         if (!etiketlenen) return message.reply("💕 Birini etiketlemelisin!");
         const yuzdeOrani = Math.floor(Math.random() * 101);
@@ -345,14 +383,6 @@ client.on('messageCreate', async message => {
     }
 
     if (cmd === 'yardım' || cmd === 'yardim') return message.reply(yardimMenusuOlustur(message.author.username));
-
-    if (cmd === 'sil') {
-        if (!message.member.permissions.has(PermissionFlagsBits.ManageMessages)) return message.reply("⚠️ Yetkin yok!");
-        const miktar = parseInt(args[0]);
-        if (isNaN(miktar) || miktar < 1 || miktar > 100) return message.reply("⚠️ 1 ile 100 arasında bir sayı gir!");
-        await message.channel.bulkDelete(miktar, true).catch(() => {});
-        return message.channel.send(`✅ **${miktar}** mesaj silindi!`).then(m => setTimeout(() => m.delete(), 3000));
-    }
 });
 
 client.login(process.env.DISCORD_TOKEN || process.env.TOKEN);
