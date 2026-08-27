@@ -164,13 +164,13 @@ function yardimMenusuOlustur(username) {
     const row = new ActionRowBuilder().addComponents(
         new StringSelectMenuBuilder().setCustomId('yardim_menu').setPlaceholder('Kategori seçmek için tıkla...')
             .addOptions([
-                { label: 'Ana Sayfa', value: 'ana_sayfa', emoji: '🏠' },
-                { label: 'Eğlence', value: 'eglence_menu', emoji: '🐱' },
-                { label: 'Kullanıcı', value: 'kullanici_menu', emoji: '🛎️' },
-                { label: 'Otomatik Mod', value: 'automod_menu', emoji: '🛠️' },
-                { label: 'Ekonomi & Kart', value: 'ekonomi_menu', emoji: '💰' },
-                { label: 'Partner Sistemi', value: 'partner_menu', emoji: '🤝' },
-                { label: 'Moderasyon', value: 'mod_menu', emoji: '🔨' }
+                { label: 'Ana Sayfa', value: 'ana_sayfa', description: 'Ana kontrol paneline geri dönersin.', emoji: '🏠' },
+                { label: 'Eğlence', value: 'eglence_menu', description: 'Eğlence ve mini oyun komutları.', emoji: '🐱' },
+                { label: 'Kullanıcı', value: 'kullanici_menu', description: 'Kullanıcı ve profil komutları.', emoji: '🛎️' },
+                { label: 'Otomatik Mod', value: 'automod_menu', description: 'Sunucu güvenlik ve koruma ayarları.', emoji: '🛠️' },
+                { label: 'Ekonomi & Kart', value: 'ekonomi_menu', description: 'Bakiye, market, gacha ve kartlar.', emoji: '💰' },
+                { label: 'Partner Sistemi', value: 'partner_menu', description: 'Partner komutları ve istatistikler.', emoji: '🤝' },
+                { label: 'Moderasyon', value: 'mod_menu', description: 'Yönetim ve ceza komutları.', emoji: '🔨' }
             ])
     );
     return { embeds: [embed], components: [row] };
