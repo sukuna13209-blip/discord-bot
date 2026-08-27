@@ -24,7 +24,7 @@ const client = new Client({
     ]
 });
 
-// --- GÜVENLİ VERİTABANI & KART ARŞİVİ ---
+// --- DOSYA YÖNETİMİ & VERİTABANI ---
 const PARTNER_FILE = './partners.json';
 const EKONOMI_FILE = './ekonomi.json';
 const KARTLAR_FILE = './kartlar.json';
@@ -34,7 +34,7 @@ const AFK_FILE = './afk.json';
 let partners = {};
 let ekonomi = {};
 
-// Genişletilmiş ve zenginleştirilmiş orijinal anime kart arşivi (Eksiksiz görsel ve sınıf verileriyle)
+// Eksiksiz ve Zenginleştirilmiş Anime Kart Arşivi
 let kartlar = [
     { isim: "Monkey D. Luffy", sinif: "Efsanevi", gorsel_link: "https://i.imgur.com/8Q965aB.png" },
     { isim: "Roronoa Zoro", sinif: "Nadir", gorsel_link: "https://i.imgur.com/8Q965aB.png" },
@@ -55,7 +55,6 @@ function veriYukle() {
     if (fs.existsSync(PARTNER_FILE)) try { partners = JSON.parse(fs.readFileSync(PARTNER_FILE, 'utf8')); } catch(e){}
     if (fs.existsSync(EKONOMI_FILE)) try { ekonomi = JSON.parse(fs.readFileSync(EKONOMI_FILE, 'utf8')); } catch(e){}
     
-    // Kartlar dosyasını güvenle yükle, boş veya eksikse varsayılan arşivi koru ve dosyaya kaydet
     if (fs.existsSync(KARTLAR_FILE)) {
         try { 
             const okununan = JSON.parse(fs.readFileSync(KARTLAR_FILE, 'utf8'));
@@ -108,7 +107,7 @@ function marketiYenile() {
 marketiYenile();
 setInterval(marketiYenile, 3 * 60 * 60 * 1000);
 
-// --- GACHA ÇEKİRDEK FONKSİYONU (Görsel ve Tasarım Tam Uyumlu) ---
+// --- GACHA ÇEKİRDEK FONKSİYONU ---
 async function gachaCek(targetMessage, user) {
     const p = profilGetir(user.id);
     if (p.bakiye < 300) {
@@ -150,7 +149,6 @@ async function gachaCek(targetMessage, user) {
         if (sinif.includes('efsanevi')) { renk = '#FFD700'; rozet = '🌟 EFSANEVİ'; }
         else if (sinif.includes('nadir')) { renk = '#9B59B6'; rozet = '💎 NADİR'; }
 
-        // İkinci görseldeki tam şablona göre tasarlandı (Yazar başlığı, rozet, bakiye ve kart görseli)
         const finalEmbed = new EmbedBuilder()
             .setColor(renk)
             .setAuthor({ name: '✨ KART ÇIKTI ✨', iconURL: user.displayAvatarURL() })
@@ -170,7 +168,7 @@ async function gachaCek(targetMessage, user) {
 // --- YARDIM MENÜSÜ ---
 function yardimMenusuOlustur(username) {
     const embed = new EmbedBuilder().setColor('#2F3136').setTitle('🛡️ Kastuhino Bot — Kontrol Paneli')
-        .setDescription(`Merhaba **${username}**, komut rehberine hoş geldin.\nAşağıdaki menüden incelemek istediğin kategoriyi seçebilirsin.\n\n📂 **Kategoriler:**\n🐱 Eğlence\n🛎️ Kullanıcı\n🛠️ Otomatik Mod\n💰 Ekonomi\n🔨 Moderasyon`);
+        .setDescription(`Merhaba **${username}**, komut rehberine hoş geldin.\nAşağıdaki menüden incelemek istediğin kategoriyi seçebilirsin.\n\n📂 **Kategoriler:**\n🐱 Eğlence\n🛎️ Kullanıcı\n🛠️ Otomatik Mod\n💰 Ekonomi\n🤝 Partner Sistemi\n🔨 Moderasyon`);
     const row = new ActionRowBuilder().addComponents(
         new StringSelectMenuBuilder().setCustomId('yardim_menu').setPlaceholder('Kategori seçmek için tıkla...')
             .addOptions([
@@ -179,6 +177,7 @@ function yardimMenusuOlustur(username) {
                 { label: 'Kullanıcı', value: 'kullanici_menu', emoji: '🛎️' },
                 { label: 'Otomatik Mod', value: 'automod_menu', emoji: '🛠️' },
                 { label: 'Ekonomi & Kart', value: 'ekonomi_menu', emoji: '💰' },
+                { label: 'Partner Sistemi', value: 'partner_menu', emoji: '🤝' },
                 { label: 'Moderasyon', value: 'mod_menu', emoji: '🔨' }
             ])
     );
@@ -198,6 +197,7 @@ client.on('interactionCreate', async interaction => {
         else if (secim === 'kullanici_menu') resEmbed.setTitle('🛎️ Kullanıcı').setDescription('`k!afk`, `k!avatar`, `k!kullanıcıbilgi`, `k!sunucubilgi`');
         else if (secim === 'automod_menu') resEmbed.setTitle('🛠️ Otomatik Mod').setDescription('`k!reklamengel`, `k!küfürengel`, `k!linkengel`, `k!capsengel`');
         else if (secim === 'ekonomi_menu') resEmbed.setTitle('💰 Ekonomi ve Gacha').setDescription('`k!bakiye`, `k!günlük`, `k!market`, `k!al [sıra]`, `k!gacha`, `k!envanter`');
+        else if (secim === 'partner_menu') resEmbed.setTitle('🤝 Partner Sistemi').setDescription('`k!partner`, `k!partner-sayi [@üye]`, `k!partner-liste`');
         else if (secim === 'mod_menu') resEmbed.setTitle('🔨 Moderasyon').setDescription('`k!ban [@üye]`, `k!kick [@üye]`, `k!mute [@üye]`, `k!sil [miktar]`');
 
         return interaction.update({ embeds: [resEmbed], components: interaction.message.components });
@@ -220,7 +220,7 @@ client.on('interactionCreate', async interaction => {
     }
 });
 
-// --- MESAJ KOMUTLARI ---
+// --- MESAJ KOMUTLARI & SİSTEMLER ---
 client.on('messageCreate', async message => {
     if (message.author.bot || !message.guild) return;
 
@@ -230,6 +230,15 @@ client.on('messageCreate', async message => {
         message.reply(`👋 Hoş geldin! AFK modundan çıktın.`).then(m => setTimeout(() => m.delete(), 5000));
     }
     message.mentions.users.forEach(u => { if (afkVeri[u.id]) message.reply(`💤 **${u.username}** şu an AFK. Sebep: *${afkVeri[u.id]}*`); });
+
+    // Partner Kanalı Otomatik Takip Sistemi
+    if (message.channel.id === PARTNER_KANAL_ID) {
+        const userId = message.author.id;
+        if (!partners[userId]) partners[userId] = { sayi: 0, isim: message.author.tag };
+        partners[userId].sayi += 1;
+        partners[userId].isim = message.author.tag;
+        veriKaydet(PARTNER_FILE, partners);
+    }
 
     // Otomatik Mod
     if (!message.member.permissions.has(PermissionFlagsBits.Administrator)) {
@@ -251,6 +260,30 @@ client.on('messageCreate', async message => {
     const args = message.content.slice(PREFIX.length).trim().split(/ +/);
     const cmd = args.shift().toLowerCase();
     const etiketlenen = message.mentions.members.first();
+
+    // PARTNER KOMUTLARI
+    if (cmd === 'partner') {
+        return message.reply({ embeds: [new EmbedBuilder().setColor('#9B59B6').setTitle('🤝 Partner Sistemi').setDescription(`Kanalda paylaştığın partner ilanları otomatik olarak sayılır.\n\nKomutlar:\n\`${PREFIX}partner-sayi [@üye]\` - Partner sayılarını görürsün.\n\`${PREFIX}partner-liste\` - Toplam partner istatistiklerini listeler.`)] });
+    }
+
+    if (cmd === 'partner-sayi' || cmd === 'partnersayi') {
+        const hedef = etiketlenen ? etiketlenen.user : message.author;
+        const veri = partners[hedef.id] ? partners[hedef.id].sayi : 0;
+        return message.reply({ embeds: [new EmbedBuilder().setColor('#3498DB').setTitle('🤝 Partner Bilgisi').setDescription(`**${hedef.username}** adlı kullanıcının toplam başarılı partner sayısı: **${veri}**`)] });
+    }
+
+    if (cmd === 'partner-liste' || cmd === 'partnerliste') {
+        const keys = Object.keys(partners);
+        if (keys.length === 0) return message.reply("📁 Henüz kayıtlı partner verisi bulunmuyor.");
+        const sirali = keys.sort((a, b) => partners[b].sayi - partners[a].sayi).slice(0, 10);
+        const embed = new EmbedBuilder().setColor('#F1C40F').setTitle('🏆 En Çok Partner Yapanlar');
+        let desc = '';
+        sirali.forEach((id, index) => {
+            desc += `**${index + 1}.** <@${id}> — **${partners[id].sayi}** Partner\n`;
+        });
+        embed.setDescription(desc);
+        return message.reply({ embeds: [embed] });
+    }
 
     // EKONOMİ & GACHA KOMUTLARI
     if (cmd === 'bakiye') {
