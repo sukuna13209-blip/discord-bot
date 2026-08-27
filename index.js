@@ -228,7 +228,7 @@ client.on('messageCreate', async message => {
     }
     message.mentions.users.forEach(u => { if (afkVeri[u.id]) message.reply(`💤 **${u.username}** şu an AFK. Sebep: *${afkVeri[u.id]}*`); });
 
-    // --- OTOMATİK PARTNER SİSTEMİ (Link Kontrollü ve Cevap Veren Yapı) ---
+    // --- OTOMATİK PARTNER SİSTEMİ (İkinci Fotoğraftaki Gibi Embed Profili) ---
     if (message.channel.id === PARTNER_KANAL_ID) {
         const icerik = message.content.toLowerCase();
         if (icerik.includes('discord.gg/') || icerik.includes('discord.com/invite/')) {
@@ -239,7 +239,22 @@ client.on('messageCreate', async message => {
             veriKaydet(PARTNER_FILE, partners);
             
             message.react('✅').catch(() => {});
-            message.reply(`✅ Partner ilanı onaylandı! Toplam partner sayın: **${partners[userId].sayi}**`).catch(() => {});
+
+            const partnerEmbed = new EmbedBuilder()
+                .setColor('#2F3136')
+                .setAuthor({ name: message.author.username, iconURL: message.author.displayAvatarURL() })
+                .setTitle('Partnerlik Profili')
+                .setThumbnail(message.author.displayAvatarURL({ dynamic: true }))
+                .addFields(
+                    { name: 'Bugünlük Partnerin:', value: `${partners[userId].sayi}`, inline: false },
+                    { name: 'Haftalık Partnerin:', value: `${partners[userId].sayi}`, inline: false },
+                    { name: 'Aylık Partnerin:', value: `${partners[userId].sayi}`, inline: false },
+                    { name: 'Toplam Partnerin:', value: `${partners[userId].sayi}`, inline: false },
+                    { name: 'Haftalık Sıralaman:', value: '#1', inline: false }
+                )
+                .setImage('https://images.alphacoders.com/133/1331776.png');
+
+            message.reply({ content: `✅ **Partnerlik sayıldı!**`, embeds: [partnerEmbed] }).catch(() => {});
         }
     }
 
@@ -266,7 +281,7 @@ client.on('messageCreate', async message => {
 
     // PARTNER KOMUTLARI
     if (cmd === 'partner') {
-        return message.reply({ embeds: [new EmbedBuilder().setColor('#9B59B6').setTitle('🤝 Partner Sistemi').setDescription(`Partner kanalına **davet linki** içeren ilan attığında otomatik olarak sayılır.\n\n**Komutlar:**\n\`${PREFIX}partner-sayi [@üye]\` - Partner sayılarını görürsün.\n\`${PREFIX}partner-liste\` - Toplam partner istatistiklerini listeler.`)] });
+        return message.reply({ embeds: [new EmbedBuilder().setColor('#9B59B6').setTitle('🤝 Partner Sistemi').setDescription(`Partner kanalına **davet linki** içeren ilan attığında otomatik olarak sayılır ve profil kartı gönderilir.\n\n**Komutlar:**\n\`${PREFIX}partner-sayi [@üye]\` - Partner sayılarını görürsün.\n\`${PREFIX}partner-liste\` - Toplam partner istatistiklerini listeler.`)] });
     }
 
     if (cmd === 'partner-sayi' || cmd === 'partnersayi') {
