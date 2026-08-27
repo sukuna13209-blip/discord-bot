@@ -198,7 +198,7 @@ client.on('interactionCreate', async interaction => {
         else if (secim === 'kullanici_menu') resEmbed.setTitle('🛎️ Kullanıcı').setDescription('`k!afk`, `k!avatar`, `k!kullanıcıbilgi`, `k!sunucubilgi`');
         else if (secim === 'automod_menu') resEmbed.setTitle('🛠️ Otomatik Mod').setDescription('`k!reklamengel`, `k!küfürengel`, `k!linkengel`, `k!capsengel`');
         else if (secim === 'ekonomi_menu') resEmbed.setTitle('💰 Ekonomi ve Gacha').setDescription('`k!bakiye`, `k!günlük`, `k!market`, `k!al [sıra]`, `k!gacha`, `k!envanter`');
-        else if (secim === 'partner_menu') resEmbed.setTitle('🤝 Partner Sistemi').setDescription('`k!partner`, `k!partner-sayi [@üye]`, `k!partner-liste`');
+        else if (secim === 'partner_menu') resEmbed.setTitle('🤝 Partner Sistemi').setDescription('`k!partner`, `k!partner-sayi [@üye]`, `k!partner-liste`, `k!partner ekle [@üye]`, `k!partner sil [@üye]`');
         else if (secim === 'mod_menu') resEmbed.setTitle('🔨 Moderasyon').setDescription('`k!ban [@üye]`, `k!kick [@üye]`, `k!mute [@üye]`, `k!sil [miktar]`');
 
         return interaction.update({ embeds: [resEmbed], components: interaction.message.components });
@@ -264,7 +264,31 @@ client.on('messageCreate', async message => {
 
     // PARTNER KOMUTLARI
     if (cmd === 'partner') {
-        return message.reply({ embeds: [new EmbedBuilder().setColor('#9B59B6').setTitle('🤝 Partner Sistemi').setDescription(`Kanalda paylaştığın partner ilanları otomatik olarak sayılır.\n\nKomutlar:\n\`${PREFIX}partner-sayi [@üye]\` - Partner sayılarını görürsün.\n\`${PREFIX}partner-liste\` - Toplam partner istatistiklerini listeler.`)] });
+        const altKomut = args[0] ? args[0].toLowerCase() : null;
+
+        if (altKomut === 'ekle') {
+            if (!message.member.permissions.has(PermissionFlagsBits.ManageGuild)) return message.reply("⚠️ Bu komut için yetkin yok!");
+            const hedef = etiketlenen ? etiketlenen.user : null;
+            if (!hedef) return message.reply("⚠️ Partner eklenecek üyeyi etiketlemelisin! Örn: `k!partner ekle @üye`");
+            
+            if (!partners[hedef.id]) partners[hedef.id] = { sayi: 0, isim: hedef.tag };
+            partners[hedef.id].sayi += 1;
+            veriKaydet(PARTNER_FILE, partners);
+            return message.reply(`✅ **${hedef.username}** adlı kullanıcıya 1 partner eklendi. Toplam: **${partners[hedef.id].sayi}**`);
+        }
+
+        if (altKomut === 'sil') {
+            if (!message.member.permissions.has(PermissionFlagsBits.ManageGuild)) return message.reply("⚠️ Bu komut için yetkin yok!");
+            const hedef = etiketlenen ? etiketlenen.user : null;
+            if (!hedef) return message.reply("⚠️ Partner silinecek üyeyi etiketlemelisin! Örn: `k!partner sil @üye`");
+            
+            if (!partners[hedef.id] || partners[hedef.id].sayi <= 0) return message.reply("⚠️ Bu kullanıcının zaten silinecek partneri yok.");
+            partners[hedef.id].sayi -= 1;
+            veriKaydet(PARTNER_FILE, partners);
+            return message.reply(`✅ **${hedef.username}** adlı kullanıcının 1 partneri silindi. Toplam: **${partners[hedef.id].sayi}**`);
+        }
+
+        return message.reply({ embeds: [new EmbedBuilder().setColor('#9B59B6').setTitle('🤝 Partner Sistemi').setDescription(`Kanalda paylaşılan ilanlar otomatik sayılır ya da yetkililer manuel yönetebilir.\n\n**Komutlar:**\n\`${PREFIX}partner-sayi [@üye]\` - Partner sayılarını görürsün.\n\`${PREFIX}partner-liste\` - Toplam sıralamayı listeler.\n\`${PREFIX}partner ekle [@üye]\` - Manuel partner ekler.\n\`${PREFIX}partner sil [@üye]\` - Manuel partner siler.`)] });
     }
 
     if (cmd === 'partner-sayi' || cmd === 'partnersayi') {
@@ -349,8 +373,8 @@ client.on('messageCreate', async message => {
 
     if (cmd === 'ban') {
         if (!message.member.permissions.has(PermissionFlagsBits.BanMembers)) return message.reply("⚠️ Üyeleri yasakla yetkin yok!");
-        if (!etiketlenen) return message.reply("⚠️ Yasaklanacak üyeyi etiketlemelisin! Örn: \`${PREFIX}ban @üye\``);
-        if (!etiketlenen.bannable) return message.reply("⚠️ Bu üyeyi yasaklayamıyorum (Yetkim yetersiz olabilir).");
+        if (!etiketlenen) return message.reply("⚠️ Yasaklanacak üyeyi etiketlemelisin!");
+        if (!etiketlenen.bannable) return message.reply("⚠️ Bu üyeyi yasaklayamıyorum.");
         const sebep = args.slice(1).join(' ') || 'Belirtilmedi';
         await etiketlenen.ban({ reason: sebep }).catch(() => {});
         return message.reply(`🔨 **${etiketlenen.user.tag}** sunucudan yasaklandı! Sebep: *${sebep}*`);
@@ -358,24 +382,24 @@ client.on('messageCreate', async message => {
 
     if (cmd === 'kick') {
         if (!message.member.permissions.has(PermissionFlagsBits.KickMembers)) return message.reply("⚠️ Üyeleri at yetkin yok!");
-        if (!etiketlenen) return message.reply("⚠️ Atılacak üyeyi etiketlemelisin! Örn: \`${PREFIX}kick @üye\``);
-        if (!etiketlenen.kickable) return message.reply("⚠️ Bu üyeyi atamıyorum (Yetkim yetersiz olabilir).");
+        if (!etiketlenen) return message.reply("⚠️ Atılacak üyeyi etiketlemelisin!");
+        if (!etiketlenen.kickable) return message.reply("⚠️ Bu üyeyi atamıyorum.");
         const sebep = args.slice(1).join(' ') || 'Belirtilmedi';
         await etiketlenen.kick(sebep).catch(() => {});
         return message.reply(`👢 **${etiketlenen.user.tag}** sunucudan atıldı! Sebep: *${sebep}*`);
     }
 
     if (cmd === 'mute') {
-        if (!message.member.permissions.has(PermissionFlagsBits.ModerateMembers)) return message.reply("⚠️ Üyeleri zaman aşımına uğrat yetkin yok!");
-        if (!etiketlenen) return message.reply("⚠️ Susturulacak üyeyi etiketlemelisin! Örn: \`${PREFIX}mute @üye 10\``);
+        if (!message.member.permissions.has(PermissionFlagsBits.ModerateMembers)) return message.reply("⚠️ Susturma yetkin yok!");
+        if (!etiketlenen) return message.reply("⚠️ Susturulacak üyeyi etiketlemelisin!");
         const dakika = parseInt(args[1]);
-        if (isNaN(dakika) || dakika < 1) return message.reply("⚠️ Geçerli bir süre (dakika cinsinden) belirtmelisin!");
+        if (isNaN(dakika) || dakika < 1) return message.reply("⚠️ Geçerli bir süre (dakika) gir!");
         const sebep = args.slice(2).join(' ') || 'Belirtilmedi';
         await etiketlenen.timeout(dakika * 60 * 1000, sebep).catch(() => {});
-        return message.reply(`🔇 **${etiketlenen.user.tag}** ${dakika} dakika süreyle susturuldu! Sebep: *${sebep}*`);
+        return message.reply(`🔇 **${etiketlenen.user.tag}** ${dakika} dakika susturuldu! Sebep: *${sebep}*`);
     }
 
-    // DİĞER EĞLENCE KOMUTLARI
+    // EĞLENCE & YARDIM
     if (cmd === 'ship') {
         if (!etiketlenen) return message.reply("💕 Birini etiketlemelisin!");
         const yuzdeOrani = Math.floor(Math.random() * 101);
