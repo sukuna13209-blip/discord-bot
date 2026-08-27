@@ -233,9 +233,9 @@ client.on('messageCreate', async message => {
             
             message.react('✅').catch(() => {});
 
-            // Sağ üst kare: Sunucu PP'si (Icon) | Alttaki büyük görsel: Sunucu Banner veya Güvenli Görsel Linki
+            // Sağ üst kare: Sunucu PP'si | Alttaki büyük görsel: Gönderdiğin özel bağlantı
             const sunucuPp = message.guild.iconURL({ dynamic: true, size: 1024 });
-            const buyukGorsel = message.guild.bannerURL({ dynamic: true, size: 1024 }) || "https://images.alphacoders.com/604/604470.png";
+            const buyukGorsel = "https://i.postimg.cc/PqJ78dP6/c84c6583-884f-46c2-ba81-933db6aaeff8.png";
 
             const partnerEmbed = new EmbedBuilder()
                 .setColor('#2F3136')
