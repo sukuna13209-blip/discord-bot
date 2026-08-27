@@ -34,7 +34,6 @@ const AFK_FILE = './afk.json';
 let partners = {};
 let ekonomi = {};
 
-// Karakter ve Görsel Arşivi
 let kartlar = [
     { isim: "Monkey D. Luffy", sinif: "Efsanevi", gorsel_link: "https://images.alphacoders.com/133/1331776.png" },
     { isim: "Portgas D. Ace", sinif: "Efsanevi", gorsel_link: "https://images.alphacoders.com/112/1123306.png" },
@@ -75,7 +74,6 @@ function profilGetir(userId) {
     return ekonomi[userId];
 }
 
-// --- GACHA & MARKET MOTORU ---
 function rastgeleKartSec() {
     if (kartlar.length === 0) return null;
     const efsaneviler = kartlar.filter(k => k.sinif && k.sinif.toLowerCase().includes('efsanevi'));
@@ -106,7 +104,6 @@ function marketiYenile() {
 marketiYenile();
 setInterval(marketiYenile, 3 * 60 * 60 * 1000);
 
-// --- GACHA ÇEKİRDEK FONKSİYONU ---
 async function gachaCek(targetMessage, user) {
     const p = profilGetir(user.id);
     if (p.bakiye < 300) {
@@ -164,7 +161,6 @@ async function gachaCek(targetMessage, user) {
     }, 2000);
 }
 
-// --- YARDIM MENÜSÜ ---
 function yardimMenusuOlustur(username) {
     const embed = new EmbedBuilder().setColor('#2F3136').setTitle('🛡️ Kastuhino Bot — Kontrol Paneli')
         .setDescription(`Merhaba **${username}**, komut rehberine hoş geldin.`);
@@ -185,7 +181,6 @@ function yardimMenusuOlustur(username) {
 
 client.once('ready', () => { console.log(`[✓] ${client.user.tag} Tüm Sistemleriyle Aktif!`); });
 
-// --- ETKİLEŞİM YÖNETİMİ ---
 client.on('interactionCreate', async interaction => {
     if (interaction.isStringSelectMenu() && interaction.customId === 'yardim_menu') {
         const secim = interaction.values[0];
@@ -217,18 +212,16 @@ client.on('interactionCreate', async interaction => {
     }
 });
 
-// --- MESAJ KOMUTLARI & SİSTEMLER ---
 client.on('messageCreate', async message => {
     if (message.author.bot || !message.guild) return;
 
-    // AFK Sistemi
     if (afkVeri[message.author.id]) {
         delete afkVeri[message.author.id]; veriKaydet(AFK_FILE, afkVeri);
         message.reply(`👋 Hoş geldin! AFK modundan çıktın.`).then(m => setTimeout(() => m.delete(), 5000));
     }
     message.mentions.users.forEach(u => { if (afkVeri[u.id]) message.reply(`💤 **${u.username}** şu an AFK. Sebep: *${afkVeri[u.id]}*`); });
 
-    // --- OTOMATİK PARTNER SİSTEMİ (İkinci Fotoğraftaki Gibi Embed Profili) ---
+    // --- OTOMATİK PARTNER SİSTEMİ ---
     if (message.channel.id === PARTNER_KANAL_ID) {
         const icerik = message.content.toLowerCase();
         if (icerik.includes('discord.gg/') || icerik.includes('discord.com/invite/')) {
@@ -240,11 +233,15 @@ client.on('messageCreate', async message => {
             
             message.react('✅').catch(() => {});
 
+            // Sağ üst kare: Sunucu PP'si (Icon) | Alttaki büyük görsel: Sunucu Banner veya Güvenli Görsel Linki
+            const sunucuPp = message.guild.iconURL({ dynamic: true, size: 1024 });
+            const buyukGorsel = message.guild.bannerURL({ dynamic: true, size: 1024 }) || "https://images.alphacoders.com/604/604470.png";
+
             const partnerEmbed = new EmbedBuilder()
                 .setColor('#2F3136')
-                .setAuthor({ name: message.author.username, iconURL: message.author.displayAvatarURL() })
+                .setAuthor({ name: message.author.tag, iconURL: message.author.displayAvatarURL() })
                 .setTitle('Partnerlik Profili')
-                .setThumbnail(message.author.displayAvatarURL({ dynamic: true }))
+                .setThumbnail(sunucuPp) // Sağ üstteki kare ikon (Sunucu PP'si)
                 .addFields(
                     { name: 'Bugünlük Partnerin:', value: `${partners[userId].sayi}`, inline: false },
                     { name: 'Haftalık Partnerin:', value: `${partners[userId].sayi}`, inline: false },
@@ -252,13 +249,12 @@ client.on('messageCreate', async message => {
                     { name: 'Toplam Partnerin:', value: `${partners[userId].sayi}`, inline: false },
                     { name: 'Haftalık Sıralaman:', value: '#1', inline: false }
                 )
-                .setImage('https://images.alphacoders.com/133/1331776.png');
+                .setImage(buyukGorsel); // Alttaki büyük afiş görseli
 
             message.reply({ content: `✅ **Partnerlik sayıldı!**`, embeds: [partnerEmbed] }).catch(() => {});
         }
     }
 
-    // Otomatik Mod
     if (!message.member.permissions.has(PermissionFlagsBits.Administrator)) {
         const text = message.content.toLowerCase();
         const kufurler = ['amk', 'aq', 'sik', 'piç', 'orospu', 'yarak', 'yarrak'];
@@ -279,7 +275,6 @@ client.on('messageCreate', async message => {
     const cmd = args.shift().toLowerCase();
     const etiketlenen = message.mentions.members.first();
 
-    // PARTNER KOMUTLARI
     if (cmd === 'partner') {
         return message.reply({ embeds: [new EmbedBuilder().setColor('#9B59B6').setTitle('🤝 Partner Sistemi').setDescription(`Partner kanalına **davet linki** içeren ilan attığında otomatik olarak sayılır ve profil kartı gönderilir.\n\n**Komutlar:**\n\`${PREFIX}partner-sayi [@üye]\` - Partner sayılarını görürsün.\n\`${PREFIX}partner-liste\` - Toplam partner istatistiklerini listeler.`)] });
     }
@@ -303,7 +298,6 @@ client.on('messageCreate', async message => {
         return message.reply({ embeds: [embed] });
     }
 
-    // EKONOMİ & GACHA KOMUTLARI
     if (cmd === 'bakiye') {
         const p = profilGetir(message.author.id);
         return message.reply({ embeds: [new EmbedBuilder().setColor('#F1C40F').setTitle('💰 Cüzdan').setDescription(`${message.author}, hesabında **${p.bakiye} Cash** var!`)] });
@@ -355,7 +349,6 @@ client.on('messageCreate', async message => {
         return await gachaCek(message, message.author);
     }
 
-    // MODERASYON KOMUTLARI
     if (cmd === 'sil') {
         if (!message.member.permissions.has(PermissionFlagsBits.ManageMessages)) return message.reply("⚠️ Mesajları yönet yetkin yok!");
         const miktar = parseInt(args[0]);
@@ -392,7 +385,6 @@ client.on('messageCreate', async message => {
         return message.reply(`🔇 **${etiketlenen.user.tag}** ${dakika} dakika susturuldu! Sebep: *${sebep}*`);
     }
 
-    // EĞLENCE
     if (cmd === 'ship') {
         if (!etiketlenen) return message.reply("💕 Birini etiketlemelisin!");
         const yuzdeOrani = Math.floor(Math.random() * 101);
