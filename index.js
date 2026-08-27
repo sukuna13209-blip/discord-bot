@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits, EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder, PermissionFlagsBits } = require('discord.js');
+const { Client, GatewayIntentBits, EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits } = require('discord.js');
 const fs = require('fs');
 const http = require('http');
 
@@ -24,7 +24,7 @@ const client = new Client({
     ]
 });
 
-// --- GÜVENLİ VERİTABANI YÖNETİMİ ---
+// --- DOSYA YÖNETİMİ & VERİTABANI ---
 const PARTNER_FILE = './partners.json';
 const EKONOMI_FILE = './ekonomi.json';
 const KARTLAR_FILE = './kartlar.json';
@@ -33,12 +33,21 @@ const AFK_FILE = './afk.json';
 
 let partners = {};
 let ekonomi = {};
+
+// Karakter ve Görsel Arşivi
 let kartlar = [
-    { isim: "Monkey D. Luffy", sinif: "Efsanevi", gorsel_link: "https://i.imgur.com/8Q965aB.png" },
-    { isim: "Roronoa Zoro", sinif: "Nadir", gorsel_link: "https://i.imgur.com/8Q965aB.png" },
-    { isim: "Naruto Uzumaki", sinif: "Efsanevi", gorsel_link: "https://i.imgur.com/8Q965aB.png" },
-    { isim: "Tanjiro Kamado", sinif: "Standart", gorsel_link: "https://i.imgur.com/8Q965aB.png" }
+    { isim: "Monkey D. Luffy", sinif: "Efsanevi", gorsel_link: "https://images.alphacoders.com/133/1331776.png" },
+    { isim: "Portgas D. Ace", sinif: "Efsanevi", gorsel_link: "https://images.alphacoders.com/112/1123306.png" },
+    { isim: "Roronoa Zoro", sinif: "Nadir", gorsel_link: "https://images.alphacoders.com/132/1325325.png" },
+    { isim: "Naruto Uzumaki", sinif: "Efsanevi", gorsel_link: "https://images.alphacoders.com/565/565217.png" },
+    { isim: "Namikaze Minato", sinif: "Efsanevi", gorsel_link: "https://images.alphacoders.com/133/1333678.png" },
+    { isim: "Uchiha Itachi", sinif: "Standart", gorsel_link: "https://images.alphacoders.com/797/797828.png" },
+    { isim: "Ken Kaneki", sinif: "Efsanevi", gorsel_link: "https://images.alphacoders.com/604/604470.png" },
+    { isim: "Ichigo Kurosaki", sinif: "Nadir", gorsel_link: "https://images.alphacoders.com/100/1008779.png" },
+    { isim: "Killua Zoldyck", sinif: "Nadir", gorsel_link: "https://images.alphacoders.com/133/1331821.png" },
+    { isim: "Tanjiro Kamado", sinif: "Standart", gorsel_link: "https://images.alphacoders.com/131/1315570.png" }
 ];
+
 let ayarlar = { kufurEngel: false, reklamEngel: false, linkEngel: false, capsEngel: false };
 let afkVeri = {};
 let marketKartlari = [];
@@ -46,14 +55,15 @@ let marketKartlari = [];
 function veriYukle() {
     if (fs.existsSync(PARTNER_FILE)) try { partners = JSON.parse(fs.readFileSync(PARTNER_FILE, 'utf8')); } catch(e){}
     if (fs.existsSync(EKONOMI_FILE)) try { ekonomi = JSON.parse(fs.readFileSync(EKONOMI_FILE, 'utf8')); } catch(e){}
+    
     if (fs.existsSync(KARTLAR_FILE)) {
         try { 
             const okununan = JSON.parse(fs.readFileSync(KARTLAR_FILE, 'utf8'));
             if (Array.isArray(okununan) && okununan.length > 0) kartlar = okununan;
         } catch(e){}
-    } else {
-        fs.writeFileSync(KARTLAR_FILE, JSON.stringify(kartlar, null, 2));
     }
+    fs.writeFileSync(KARTLAR_FILE, JSON.stringify(kartlar, null, 2));
+
     if (fs.existsSync(AYARLAR_FILE)) try { ayarlar = JSON.parse(fs.readFileSync(AYARLAR_FILE, 'utf8')); } catch(e){}
     if (fs.existsSync(AFK_FILE)) try { afkVeri = JSON.parse(fs.readFileSync(AFK_FILE, 'utf8')); } catch(e){}
 }
@@ -96,10 +106,68 @@ function marketiYenile() {
 marketiYenile();
 setInterval(marketiYenile, 3 * 60 * 60 * 1000);
 
+// --- GACHA ÇEKİRDEK FONKSİYONU ---
+async function gachaCek(targetMessage, user) {
+    const p = profilGetir(user.id);
+    if (p.bakiye < 300) {
+        const uyari = { content: "⚠️ Gacha çevirmek için **300 Cash** gerekiyor!", ephemeral: true };
+        if (targetMessage.reply) return targetMessage.reply(uyari);
+        if (targetMessage.update) return targetMessage.update(uyari);
+        return;
+    }
+
+    const secilen = rastgeleKartSec();
+    if (!secilen) {
+        const uyari = { content: "⚠️ Sistemde çekilebilir kart bulunamadı.", ephemeral: true };
+        if (targetMessage.reply) return targetMessage.reply(uyari);
+        if (targetMessage.update) return targetMessage.update(uyari);
+        return;
+    }
+
+    p.bakiye -= 300;
+    if (!p.envanter) p.envanter = [];
+    p.envanter.push(secilen);
+    veriKaydet(EKONOMI_FILE, ekonomi);
+
+    const yukleniyorEmbed = new EmbedBuilder()
+        .setColor('#2F3136')
+        .setTitle('🔮 Mühür Kırılıyor...')
+        .setImage('https://i.makeagif.com/media/9-28-2015/0R3bJ9.gif');
+
+    let msg;
+    if (targetMessage.reply) {
+        msg = await targetMessage.reply({ embeds: [yukleniyorEmbed], components: [] });
+    } else if (targetMessage.update) {
+        await targetMessage.update({ embeds: [yukleniyorEmbed], components: [] });
+        msg = targetMessage.message;
+    }
+
+    setTimeout(() => {
+        const sinif = (secilen.sinif || '').toLowerCase();
+        let renk = '#3498DB', rozet = '⚔️ STANDART';
+        if (sinif.includes('efsanevi')) { renk = '#FFD700'; rozet = '🌟 EFSANEVİ'; }
+        else if (sinif.includes('nadir')) { renk = '#9B59B6'; rozet = '💎 NADİR'; }
+
+        const finalEmbed = new EmbedBuilder()
+            .setColor(renk)
+            .setAuthor({ name: '✨ KART ÇIKTI ✨', iconURL: user.displayAvatarURL() })
+            .setTitle(`${rozet} — ${secilen.isim}`)
+            .setDescription(`| Kalan Bakiye: **${p.bakiye} Cash**`)
+            .setImage(secilen.gorsel_link);
+
+        const row = new ActionRowBuilder().addComponents(
+            new ButtonBuilder().setCustomId('gacha_tekrar').setLabel('Tekrar (300)').setStyle(ButtonStyle.Danger).setEmoji('🎲'),
+            new ButtonBuilder().setCustomId('gacha_envanter').setLabel('Envanter').setStyle(ButtonStyle.Secondary).setEmoji('🎒')
+        );
+
+        msg.edit({ embeds: [finalEmbed], components: [row] }).catch(() => {});
+    }, 2000);
+}
+
 // --- YARDIM MENÜSÜ ---
 function yardimMenusuOlustur(username) {
     const embed = new EmbedBuilder().setColor('#2F3136').setTitle('🛡️ Kastuhino Bot — Kontrol Paneli')
-        .setDescription(`Merhaba **${username}**, komut rehberine hoş geldin.\nAşağıdaki menüden incelemek istediğin kategoriyi seçebilirsin.\n\n📂 **Kategoriler:**\n🐱 Eğlence\n🛎️ Kullanıcı\n🛠️ Otomatik Mod\n💰 Ekonomi\n🔨 Moderasyon`);
+        .setDescription(`Merhaba **${username}**, komut rehberine hoş geldin.`);
     const row = new ActionRowBuilder().addComponents(
         new StringSelectMenuBuilder().setCustomId('yardim_menu').setPlaceholder('Kategori seçmek için tıkla...')
             .addOptions([
@@ -108,6 +176,7 @@ function yardimMenusuOlustur(username) {
                 { label: 'Kullanıcı', value: 'kullanici_menu', emoji: '🛎️' },
                 { label: 'Otomatik Mod', value: 'automod_menu', emoji: '🛠️' },
                 { label: 'Ekonomi & Kart', value: 'ekonomi_menu', emoji: '💰' },
+                { label: 'Partner Sistemi', value: 'partner_menu', emoji: '🤝' },
                 { label: 'Moderasyon', value: 'mod_menu', emoji: '🔨' }
             ])
     );
@@ -116,21 +185,39 @@ function yardimMenusuOlustur(username) {
 
 client.once('ready', () => { console.log(`[✓] ${client.user.tag} Tüm Sistemleriyle Aktif!`); });
 
+// --- ETKİLEŞİM YÖNETİMİ ---
 client.on('interactionCreate', async interaction => {
-    if (!interaction.isStringSelectMenu() || interaction.customId !== 'yardim_menu') return;
-    const secim = interaction.values[0];
-    const resEmbed = new EmbedBuilder().setColor('#2B2D31').setTimestamp();
+    if (interaction.isStringSelectMenu() && interaction.customId === 'yardim_menu') {
+        const secim = interaction.values[0];
+        const resEmbed = new EmbedBuilder().setColor('#2B2D31').setTimestamp();
 
-    if (secim === 'ana_sayfa') return interaction.update(yardimMenusuOlustur(interaction.user.username));
-    if (secim === 'eglence_menu') resEmbed.setTitle('🐱 Eğlence').setDescription('`k!1vs1`, `k!ship`, `k!fakemesaj`, `k!fast`');
-    else if (secim === 'kullanici_menu') resEmbed.setTitle('🛎️ Kullanıcı').setDescription('`k!afk`, `k!avatar`, `k!kullanıcıbilgi`, `k!sunucubilgi`');
-    else if (secim === 'automod_menu') resEmbed.setTitle('🛠️ Otomatik Mod').setDescription('`k!reklamengel`, `k!küfürengel`, `k!linkengel`, `k!capsengel`');
-    else if (secim === 'ekonomi_menu') resEmbed.setTitle('💰 Ekonomi ve Gacha').setDescription('`k!bakiye`, `k!günlük`, `k!market`, `k!al [sıra]`, `k!gacha`, `k!envanter`');
-    else if (secim === 'mod_menu') resEmbed.setTitle('🔨 Moderasyon').setDescription('`k!ban [@üye]`, `k!kick [@üye]`, `k!mute [@üye]`, `k!sil [miktar]`');
+        if (secim === 'ana_sayfa') return interaction.update(yardimMenusuOlustur(interaction.user.username));
+        if (secim === 'eglence_menu') resEmbed.setTitle('🐱 Eğlence').setDescription('`k!1vs1`, `k!ship`, `k!fakemesaj`');
+        else if (secim === 'kullanici_menu') resEmbed.setTitle('🛎️ Kullanıcı').setDescription('`k!afk`, `k!avatar`, `k!kullanıcıbilgi`');
+        else if (secim === 'automod_menu') resEmbed.setTitle('🛠️ Otomatik Mod').setDescription('`k!reklamengel`, `k!küfürengel`, `k!linkengel`, `k!capsengel`');
+        else if (secim === 'ekonomi_menu') resEmbed.setTitle('💰 Ekonomi ve Gacha').setDescription('`k!bakiye`, `k!günlük`, `k!market`, `k!al [sıra]`, `k!gacha`, `k!envanter`');
+        else if (secim === 'partner_menu') resEmbed.setTitle('🤝 Partner Sistemi').setDescription('`k!partner`, `k!partner-sayi [@üye]`, `k!partner-liste`');
+        else if (secim === 'mod_menu') resEmbed.setTitle('🔨 Moderasyon').setDescription('`k!ban [@üye]`, `k!kick [@üye]`, `k!mute [@üye]`, `k!sil [miktar]`');
 
-    return interaction.update({ embeds: [resEmbed], components: interaction.message.components });
+        return interaction.update({ embeds: [resEmbed], components: interaction.message.components });
+    }
+
+    if (interaction.isButton()) {
+        if (interaction.customId === 'gacha_tekrar') {
+            await gachaCek(interaction, interaction.user);
+        } else if (interaction.customId === 'gacha_envanter') {
+            const p = profilGetir(interaction.user.id);
+            if (!p.envanter || p.envanter.length === 0) return interaction.reply({ content: "🎒 Envanterin bomboş.", ephemeral: true });
+            const embed = new EmbedBuilder().setColor('#3498DB').setTitle(`🎒 ${interaction.user.username} — Envanter`);
+            let desc = '';
+            p.envanter.forEach((k, i) => { desc += `**${i + 1}.** ${k.isim} — *${k.sinif || 'Standart'}*\n`; });
+            embed.setDescription(desc);
+            return interaction.reply({ embeds: [embed], ephemeral: true });
+        }
+    }
 });
 
+// --- MESAJ KOMUTLARI & SİSTEMLER ---
 client.on('messageCreate', async message => {
     if (message.author.bot || !message.guild) return;
 
@@ -141,6 +228,21 @@ client.on('messageCreate', async message => {
     }
     message.mentions.users.forEach(u => { if (afkVeri[u.id]) message.reply(`💤 **${u.username}** şu an AFK. Sebep: *${afkVeri[u.id]}*`); });
 
+    // --- OTOMATİK PARTNER SİSTEMİ (Link Kontrollü ve Cevap Veren Yapı) ---
+    if (message.channel.id === PARTNER_KANAL_ID) {
+        const icerik = message.content.toLowerCase();
+        if (icerik.includes('discord.gg/') || icerik.includes('discord.com/invite/')) {
+            const userId = message.author.id;
+            if (!partners[userId]) partners[userId] = { sayi: 0, isim: message.author.tag };
+            partners[userId].sayi += 1;
+            partners[userId].isim = message.author.tag;
+            veriKaydet(PARTNER_FILE, partners);
+            
+            message.react('✅').catch(() => {});
+            message.reply(`✅ Partner ilanı onaylandı! Toplam partner sayın: **${partners[userId].sayi}**`).catch(() => {});
+        }
+    }
+
     // Otomatik Mod
     if (!message.member.permissions.has(PermissionFlagsBits.Administrator)) {
         const text = message.content.toLowerCase();
@@ -149,7 +251,7 @@ client.on('messageCreate', async message => {
             await message.delete().catch(() => {});
             return message.channel.send(`⚠️ ${message.author}, küfür yasak!`).then(m => setTimeout(() => m.delete(), 3000));
         }
-        if (ayarlar.reklamEngel && (text.includes('discord.gg/') || text.includes('discord.com/invite/'))) {
+        if (ayarlar.reklamengel && (text.includes('discord.gg/') || text.includes('discord.com/invite/'))) {
             if (message.channel.id !== PARTNER_KANAL_ID) {
                 await message.delete().catch(() => {});
                 return message.channel.send(`🛡️ ${message.author}, reklam yasak!`).then(m => setTimeout(() => m.delete(), 3000));
@@ -162,7 +264,31 @@ client.on('messageCreate', async message => {
     const cmd = args.shift().toLowerCase();
     const etiketlenen = message.mentions.members.first();
 
-    // EKONOMİ & GACHA
+    // PARTNER KOMUTLARI
+    if (cmd === 'partner') {
+        return message.reply({ embeds: [new EmbedBuilder().setColor('#9B59B6').setTitle('🤝 Partner Sistemi').setDescription(`Partner kanalına **davet linki** içeren ilan attığında otomatik olarak sayılır.\n\n**Komutlar:**\n\`${PREFIX}partner-sayi [@üye]\` - Partner sayılarını görürsün.\n\`${PREFIX}partner-liste\` - Toplam partner istatistiklerini listeler.`)] });
+    }
+
+    if (cmd === 'partner-sayi' || cmd === 'partnersayi') {
+        const hedef = etiketlenen ? etiketlenen.user : message.author;
+        const veri = partners[hedef.id] ? partners[hedef.id].sayi : 0;
+        return message.reply({ embeds: [new EmbedBuilder().setColor('#3498DB').setTitle('🤝 Partner Bilgisi').setDescription(`**${hedef.username}** adlı kullanıcının toplam başarılı partner sayısı: **${veri}**`)] });
+    }
+
+    if (cmd === 'partner-liste' || cmd === 'partnerliste') {
+        const keys = Object.keys(partners);
+        if (keys.length === 0) return message.reply("📁 Henüz kayıtlı partner verisi bulunmuyor.");
+        const sirali = keys.sort((a, b) => partners[b].sayi - partners[a].sayi).slice(0, 10);
+        const embed = new EmbedBuilder().setColor('#F1C40F').setTitle('🏆 En Çok Partner Yapanlar');
+        let desc = '';
+        sirali.forEach((id, index) => {
+            desc += `**${index + 1}.** <@${id}> — **${partners[id].sayi}** Partner\n`;
+        });
+        embed.setDescription(desc);
+        return message.reply({ embeds: [embed] });
+    }
+
+    // EKONOMİ & GACHA KOMUTLARI
     if (cmd === 'bakiye') {
         const p = profilGetir(message.author.id);
         return message.reply({ embeds: [new EmbedBuilder().setColor('#F1C40F').setTitle('💰 Cüzdan').setDescription(`${message.author}, hesabında **${p.bakiye} Cash** var!`)] });
@@ -211,27 +337,47 @@ client.on('messageCreate', async message => {
     }
 
     if (cmd === 'gacha') {
-        const p = profilGetir(message.author.id);
-        if (p.bakiye < 300) return message.reply("⚠️ Gacha çevirmek için **300 Cash** gerekiyor!");
-        const secilen = rastgeleKartSec();
-        if (!secilen) return message.reply("⚠️ Sistemde çekilebilir kart bulunamadı.");
-        p.bakiye -= 300;
-        if (!p.envanter) p.envanter = [];
-        p.envanter.push(secilen);
-        veriKaydet(EKONOMI_FILE, ekonomi);
-
-        const m = await message.reply({ embeds: [new EmbedBuilder().setColor('#2F3136').setTitle('🔮 Mühür Kırılıyor...').setImage('https://i.makeagif.com/media/9-28-2015/0R3bJ9.gif')] });
-        setTimeout(() => {
-            const sinif = (secilen.sinif || '').toLowerCase();
-            let renk = '#3498DB', rozet = '⚔️ STANDART';
-            if (sinif.includes('efsanevi')) { renk = '#FFD700'; rozet = '🌟 EFSANEVİ'; }
-            else if (sinif.includes('nadir')) { renk = '#9B59B6'; rozet = '💎 NADİR'; }
-            m.edit({ embeds: [new EmbedBuilder().setColor(renk).setTitle(`${rozet} — ${secilen.isim}`).setImage(secilen.gorsel_link)] });
-        }, 2000);
-        return;
+        return await gachaCek(message, message.author);
     }
 
-    // DİĞER KOMUTLAR
+    // MODERASYON KOMUTLARI
+    if (cmd === 'sil') {
+        if (!message.member.permissions.has(PermissionFlagsBits.ManageMessages)) return message.reply("⚠️ Mesajları yönet yetkin yok!");
+        const miktar = parseInt(args[0]);
+        if (isNaN(miktar) || miktar < 1 || miktar > 100) return message.reply("⚠️ 1 ile 100 arasında bir sayı gir!");
+        await message.channel.bulkDelete(miktar, true).catch(() => {});
+        return message.channel.send(`✅ **${miktar}** mesaj silindi!`).then(m => setTimeout(() => m.delete(), 3000));
+    }
+
+    if (cmd === 'ban') {
+        if (!message.member.permissions.has(PermissionFlagsBits.BanMembers)) return message.reply("⚠️ Üyeleri yasakla yetkin yok!");
+        if (!etiketlenen) return message.reply("⚠️ Yasaklanacak üyeyi etiketlemelisin!");
+        if (!etiketlenen.bannable) return message.reply("⚠️ Bu üyeyi yasaklayamıyorum.");
+        const sebep = args.slice(1).join(' ') || 'Belirtilmedi';
+        await etiketlenen.ban({ reason: sebep }).catch(() => {});
+        return message.reply(`🔨 **${etiketlenen.user.tag}** sunucudan yasaklandı! Sebep: *${sebep}*`);
+    }
+
+    if (cmd === 'kick') {
+        if (!message.member.permissions.has(PermissionFlagsBits.KickMembers)) return message.reply("⚠️ Üyeleri at yetkin yok!");
+        if (!etiketlenen) return message.reply("⚠️ Atılacak üyeyi etiketlemelisin!");
+        if (!etiketlenen.kickable) return message.reply("⚠️ Bu üyeyi atamıyorum.");
+        const sebep = args.slice(1).join(' ') || 'Belirtilmedi';
+        await etiketlenen.kick(sebep).catch(() => {});
+        return message.reply(`👢 **${etiketlenen.user.tag}** sunucudan atıldı! Sebep: *${sebep}*`);
+    }
+
+    if (cmd === 'mute') {
+        if (!message.member.permissions.has(PermissionFlagsBits.ModerateMembers)) return message.reply("⚠️ Susturma yetkin yok!");
+        if (!etiketlenen) return message.reply("⚠️ Susturulacak üyeyi etiketlemelisin!");
+        const dakika = parseInt(args[1]);
+        if (isNaN(dakika) || dakika < 1) return message.reply("⚠️ Geçerli bir süre (dakika) gir!");
+        const sebep = args.slice(2).join(' ') || 'Belirtilmedi';
+        await etiketlenen.timeout(dakika * 60 * 1000, sebep).catch(() => {});
+        return message.reply(`🔇 **${etiketlenen.user.tag}** ${dakika} dakika susturuldu! Sebep: *${sebep}*`);
+    }
+
+    // EĞLENCE
     if (cmd === 'ship') {
         if (!etiketlenen) return message.reply("💕 Birini etiketlemelisin!");
         const yuzdeOrani = Math.floor(Math.random() * 101);
@@ -239,14 +385,6 @@ client.on('messageCreate', async message => {
     }
 
     if (cmd === 'yardım' || cmd === 'yardim') return message.reply(yardimMenusuOlustur(message.author.username));
-
-    if (cmd === 'sil') {
-        if (!message.member.permissions.has(PermissionFlagsBits.ManageMessages)) return message.reply("⚠️ Yetkin yok!");
-        const miktar = parseInt(args[0]);
-        if (isNaN(miktar) || miktar < 1 || miktar > 100) return message.reply("⚠️ 1 ile 100 arasında bir sayı gir!");
-        await message.channel.bulkDelete(miktar, true).catch(() => {});
-        return message.channel.send(`✅ **${miktar}** mesaj silindi!`).then(m => setTimeout(() => m.delete(), 3000));
-    }
 });
 
 client.login(process.env.DISCORD_TOKEN || process.env.TOKEN);
