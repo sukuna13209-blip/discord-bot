@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits, EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder, ButtonBuilder, ButtonStyle, REST, Routes, SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
+const { Client, GatewayIntentBits, EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder, ButtonBuilder, ButtonStyle, SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
 const fs = require('fs');
 const http = require('http');
 
@@ -10,7 +10,7 @@ const server = http.createServer((req, res) => {
 server.listen(process.env.PORT || 3000);
 
 // --- SABİT AYARLAR ---
-const PARTNER_KANAL_ID = '1514756158831988876'; // Otomatik partner algılama kanalı
+const PARTNER_KANAL_ID = '1514756158831988876'; 
 const PREFIX = 'k!';
 
 const client = new Client({
@@ -63,14 +63,20 @@ function haftalikSiralamaBul(userId) {
     return index !== -1 ? index + 1 : 1;
 }
 
-// --- BİREBİR FOTOĞRAFTAKİ PARTNER EMBED TASARIMI ---
+// --- BİREBİR FOTOĞRAFTAKİ PARTNER EMBED TASARIMI (SAĞ ÜST SUNUCU LOGOLU) ---
 function createPartnerEmbed(user, data, guild) {
     const siralama = haftalikSiralamaBul(user.id);
+    
+    // Sunucu simgesini v14 ile tam uyumlu çeker, yoksa profil resmine düşer
+    const serverIcon = (guild && guild.iconURL()) 
+        ? guild.iconURL({ size: 512 }) 
+        : user.displayAvatarURL({ size: 512 });
+
     const embed = new EmbedBuilder()
         .setColor('#5865F2')
         .setAuthor({ 
             name: user.username, 
-            iconURL: user.displayAvatarURL({ dynamic: true }) 
+            iconURL: user.displayAvatarURL() 
         })
         .setTitle('Partnerlik Profili')
         .setDescription(
@@ -80,7 +86,7 @@ function createPartnerEmbed(user, data, guild) {
             `**Toplam Partnerin:** ${data.toplam || 0}\n` +
             `**Haftalık Sıralaman:** #${siralama}`
         )
-        .setThumbnail(user.displayAvatarURL({ dynamic: true, size: 512 }))
+        .setThumbnail(serverIcon) // Sağ üstteki kare alana artık sunucu ikonu gelir
         .setImage('https://i.postimg.cc/PqJ78dP6/c84c6583-884f-46c2-ba81-933db6aaeff8.png')
         .setTimestamp();
 
@@ -272,13 +278,13 @@ async function komutIsle(isim, ctx, args = []) {
 
         const finalEmbed = new EmbedBuilder()
             .setColor(renk)
-            .setAuthor({ name: '✨ KART ÇEKİMİ BAŞARILI ✨', iconURL: user.displayAvatarURL({ dynamic: true }) })
+            .setAuthor({ name: '✨ KART ÇEKİMİ BAŞARILI ✨', iconURL: user.displayAvatarURL() })
             .setTitle(`${rozet} — ${secilen.isim}`)
             .setDescription(`**Sınıfı / Nadirliği:** ${secilen.sinif || 'Standart'}\n\nKastuhino Koleksiyon Seti'nden yeni bir kart çıkardın!`)
             .setImage(secilen.gorsel_link)
             .setFooter({ 
                 text: `${user.username} tarafından çekildi`, 
-                iconURL: user.displayAvatarURL({ dynamic: true }) 
+                iconURL: user.displayAvatarURL() 
             });
 
         const btnRow = new ActionRowBuilder().addComponents(
@@ -352,7 +358,7 @@ client.on('interactionCreate', async interaction => {
     await komutIsle(commandName, interaction, [arg]);
 });
 
-// --- MESAJLAR VE %100 ORİJİNAL PARTNER SAYAÇ ---
+// --- MESAJLAR VE OTOMATİK PARTNER SAYAÇ ---
 client.on('messageCreate', async message => {
     if (message.author.bot || !message.guild) return;
 
@@ -360,7 +366,7 @@ client.on('messageCreate', async message => {
         partners[message.author.id] = { bugun: 0, hafta: 0, ay: 0, toplam: 0 };
     }
 
-    // --- OTOMATİK PARTNER SAYAÇ (Eski Sorunsuz Kodunun Birebir Aynısı) ---
+    // OTOMATİK PARTNER SAYAÇ (Karesel alanda doğrudan Sunucu Simgesini gösterir)
     if (message.channel.id === PARTNER_KANAL_ID) {
         const text = message.content.toLowerCase();
         if (text.includes('https://discord.gg') || text.includes('discord.gg/')) {
