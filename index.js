@@ -2,14 +2,12 @@ const { Client, GatewayIntentBits, EmbedBuilder, ActionRowBuilder, StringSelectM
 const fs = require('fs');
 const http = require('http');
 
-// --- RENDER UPTIME SUNUCUSU ---
 const server = http.createServer((req, res) => {
     res.writeHead(200, { 'Content-Type': 'text/plain' });
     res.end('Kastuhino Bot Aktif!\n');
 });
 server.listen(process.env.PORT || 3000);
 
-// --- SABİT AYARLAR ---
 const PARTNER_KANAL_ID = '1514756158831988876'; 
 const PREFIX = 'k!';
 
@@ -24,7 +22,6 @@ const client = new Client({
     ]
 });
 
-// --- DOSYA YÖNETİMİ & VERİTABANI ---
 const PARTNER_FILE = './partners.json';
 const EKONOMI_FILE = './ekonomi.json';
 const KARTLAR_FILE = './kartlar.json';
@@ -221,7 +218,6 @@ client.on('messageCreate', async message => {
     }
     message.mentions.users.forEach(u => { if (afkVeri[u.id]) message.reply(`💤 **${u.username}** şu an AFK. Sebep: *${afkVeri[u.id]}*`); });
 
-    // --- OTOMATİK PARTNER SİSTEMİ ---
     if (message.channel.id === PARTNER_KANAL_ID) {
         const icerik = message.content.toLowerCase();
         if (icerik.includes('discord.gg/') || icerik.includes('discord.com/invite/')) {
@@ -233,15 +229,11 @@ client.on('messageCreate', async message => {
             
             message.react('✅').catch(() => {});
 
-            // Sağ üst kare: Sunucu PP'si | Alttaki büyük görsel: Gönderdiğin özel bağlantı
-            const sunucuPp = message.guild.iconURL({ dynamic: true, size: 1024 });
-            const buyukGorsel = "https://i.postimg.cc/PqJ78dP6/c84c6583-884f-46c2-ba81-933db6aaeff8.png";
-
             const partnerEmbed = new EmbedBuilder()
                 .setColor('#2F3136')
                 .setAuthor({ name: message.author.tag, iconURL: message.author.displayAvatarURL() })
                 .setTitle('Partnerlik Profili')
-                .setThumbnail(sunucuPp) // Sağ üstteki kare ikon (Sunucu PP'si)
+                .setThumbnail(message.author.displayAvatarURL({ dynamic: true }))
                 .addFields(
                     { name: 'Bugünlük Partnerin:', value: `${partners[userId].sayi}`, inline: false },
                     { name: 'Haftalık Partnerin:', value: `${partners[userId].sayi}`, inline: false },
@@ -249,7 +241,7 @@ client.on('messageCreate', async message => {
                     { name: 'Toplam Partnerin:', value: `${partners[userId].sayi}`, inline: false },
                     { name: 'Haftalık Sıralaman:', value: '#1', inline: false }
                 )
-                .setImage(buyukGorsel); // Alttaki büyük afiş görseli
+                .setImage('https://i.postimg.cc/PqJ78dP6/c84c6583-884f-46c2-ba81-933db6aaeff8.png');
 
             message.reply({ content: `✅ **Partnerlik sayıldı!**`, embeds: [partnerEmbed] }).catch(() => {});
         }
