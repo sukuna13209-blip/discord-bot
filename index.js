@@ -229,17 +229,18 @@ client.on('messageCreate', async message => {
             
             message.react('✅').catch(() => {});
 
+            const sayi = partners[userId].sayi;
             const partnerEmbed = new EmbedBuilder()
                 .setColor('#2F3136')
                 .setAuthor({ name: message.author.tag, iconURL: message.author.displayAvatarURL() })
                 .setTitle('Partnerlik Profili')
                 .setThumbnail(message.author.displayAvatarURL({ dynamic: true }))
-                .addFields(
-                    { name: 'Bugünlük Partnerin:', value: `${partners[userId].sayi}`, inline: false },
-                    { name: 'Haftalık Partnerin:', value: `${partners[userId].sayi}`, inline: false },
-                    { name: 'Aylık Partnerin:', value: `${partners[userId].sayi}`, inline: false },
-                    { name: 'Toplam Partnerin:', value: `${partners[userId].sayi}`, inline: false },
-                    { name: 'Haftalık Sıralaman:', value: '#1', inline: false }
+                .setDescription(
+                    `Bugünlük Partnerin: ${sayi}\n` +
+                    `Haftalık Partnerin: ${sayi}\n` +
+                    `Aylık Partnerin: ${sayi}\n` +
+                    `Toplam Partnerin: ${sayi}\n` +
+                    `Haftalık Sıralaman: #1`
                 )
                 .setImage('https://i.postimg.cc/PqJ78dP6/c84c6583-884f-46c2-ba81-933db6aaeff8.png');
 
