@@ -83,7 +83,7 @@ function yardimMenusuOlustur(username) {
             { name: '📖 Kullanım Kılavuzu', value: `Aşağıdaki açılır menüyü kullanarak her kategorinin komutlarını, detaylarını ve örnek kullanımlarını öğrenebilirsiniz.\n`, inline: false },
             { name: 'Kategoriler', value: `🐱 Eğlence\n🛎️ Kullanıcı\n🔮 Gacha ve Ekonomi\n🔨 Moderasyon\n🤝 Partner Sistemi\n🛠️ Otomatik Mod`, inline: false }
         )
-        .setFooter({ text: 'Kastuhino Bot Tüm Hakları Saklıdır. | Bu kod 1 saatlik uğraşla hazırlandı.' })
+        .setFooter({ text: 'Kastuhino Bot Tüm Hakları Saklıdır.' })
         .setTimestamp();
 
     const row = new ActionRowBuilder().addComponents(
@@ -166,21 +166,13 @@ client.on('messageCreate', async message => {
 
             const sayi = partners[userId].sayi;
             const partnerEmbed = new EmbedBuilder()
-                .setColor('#2f3136') // TASARIM GELİŞTİRME: Renk
-                .setAuthor({ name: message.author.tag, iconURL: message.author.displayAvatarURL() })
-                .setTitle('🤝 Partnerlik Başarıyla Sayıldı!') // TASARIM GELİŞTİRME: Başlık
-                .addFields(
-                    { name: 'Bugünlük Partnerin:', value: `${sayi}`, inline: false },
-                    { name: 'Haftalık Partnerin:', value: `${sayi}`, inline: false },
-                    { name: 'Aylık Partnerin:', value: `${sayi}`, inline: false },
-                    { name: 'Toplam Partnerin:', value: `${sayi}`, inline: false },
-                    { name: 'Haftalık Sıralaman:', value: '#1', inline: false }
-                )
-                // --- İSTEK 1: Thumbnail Sunucu PP'si ---
+                .setColor('#2b2d31') 
+                .setAuthor({ name: message.author.username, iconURL: message.author.displayAvatarURL() })
+                .setDescription(`**Partnerlik Profili**\n\nBugünlük Partnerin: ${sayi}\nHaftalık Partnerin: ${sayi}\nAylık Partnerin: ${sayi}\nToplam Partnerin: ${sayi}\nHaftalık Sıralaman: #1`)
                 .setThumbnail(message.guild.iconURL({ dynamic: true })) 
-                .setImage("https://images.alphacoders.com/112/1123306.png"); // Büyük afiş resmi
+                .setImage("https://i.postimg.cc/PqJ78dP6/c84c6583-884f-46c2-ba81-933db6aaeff8.png");
             
-            message.reply({ content: `🎉 **Partnerlik sayıldı! İstatistiklerin güncellendi.**`, embeds: [partnerEmbed] }).catch(() => {});
+            message.reply({ embeds: [partnerEmbed] }).catch(() => {});
         }
     }
 
@@ -206,7 +198,7 @@ client.on('messageCreate', async message => {
 
     if (cmd === 'yardım' || cmd === 'yardim') { return message.reply(yardimMenusuOlustur(message.author.username)); }
 
-    // --- PARTNER SİSTEMİ KOMUTLARI TASARIM GELİŞTİRME ---
+    // --- PARTNER SİSTEMİ KOMUTLARI ---
     if (cmd === 'partner') {
         const partnerEmbed = new EmbedBuilder()
             .setColor('#2f3136')
@@ -244,7 +236,7 @@ client.on('messageCreate', async message => {
         return message.reply({ embeds: [embed] });
     }
 
-    // --- EKONOMİ KOMUTLARI TASARIM GELİŞTİRME ---
+    // --- EKONOMİ KOMUTLARI ---
     if (cmd === 'bakiye') {
         const p = profilGetir(message.author.id);
         const bakiyeEmbed = new EmbedBuilder()
@@ -315,7 +307,7 @@ client.on('messageCreate', async message => {
         return message.reply({ embeds: [gachaEmbed] });
     }
 
-    // --- MODERASYON KOMUTLARI TASARIM GELİŞTİRME ---
+    // --- MODERASYON KOMUTLARI ---
     if (cmd === 'sil') {
         if (!message.member.permissions.has(PermissionFlagsBits.ManageMessages)) return message.reply("⚠️ Mesajları yönet yetkin yok!");
         const miktar = parseInt(args[0]);
@@ -368,11 +360,11 @@ client.on('messageCreate', async message => {
             .setColor('#2f3136')
             .setAuthor({ name: 'Moderasyon Merkezi', iconURL: 'https://images.alphacoders.com/132/1325325.png' })
             .setTitle(`🔇 Üye Susturuldu`)
-            .setDescription(`**${etiketlenen.user.tag}** ${dakika} dakika susturuldu! Sebep: *${sebep}*`);
+            .setDescription(`**${etiketlenen.user.tag}** ${dakika} dakika sustained! Sebep: *${sebep}*`);
         return message.reply({ embeds: [muteEmbed] });
     }
 
-    // --- EĞLENCE KOMUTLARI TASARIM GELİŞTİRME ---
+    // --- EĞLENCE KOMUTLARI ---
     if (cmd === 'ship') {
         if (!etiketlenen) return message.reply("💕 Birini etiketlemelisin!");
         const yuzdeOrani = Math.floor(Math.random() * 101);
@@ -384,7 +376,7 @@ client.on('messageCreate', async message => {
         return message.reply({ embeds: [shipEmbed] });
     }
 
-    // --- OTOMATİK MOD AYARLARI TASARIM GELİŞTİRME ---
+    // --- OTOMATİK MOD AYARLARI ---
     if (cmd === 'küfürengel' || cmd === 'kufurengel') {
         ayarlar.kufurEngel = !ayarlar.kufurEngel;
         veriKaydet(AYARLAR_FILE, ayarlar);
@@ -413,7 +405,7 @@ client.on('messageCreate', async message => {
         message.reply({ embeds: [embed] });
     }
 
-    // --- AFK SİSTEMİ TASARIM GELİŞTİRME ---
+    // --- AFK SİSTEMİ ---
     if (cmd === 'afk') {
         const sebep = args.join(' ') || 'Belirtilmedi'; afkVeri[message.author.id] = sebep; veriKaydet(AFK_FILE, afkVeri);
         const embed = new EmbedBuilder().setColor('#2f3136').setAuthor({ name: 'AFK Sistemi', iconURL: 'https://images.alphacoders.com/131/1315570.png' }).setTitle(`💤 AFK Modu Aktif`).setDescription(`Artık AFK modundasınız. Sebep: *${sebep}*`);
